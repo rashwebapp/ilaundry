@@ -209,6 +209,9 @@
             <button class="btn btn-secondary btn-sm" onclick="loadAllOrders()">
               🔄 Refresh Data
             </button>
+            <button class="btn btn-secondary btn-sm" onclick="openImportModal()">
+              📥 Import Data Lama
+            </button>
             <button class="btn btn-secondary btn-sm" onclick="logoutAdmin()" title="Kunci Akses Kasir">
               🔒 Kunci Kasir
             </button>
@@ -440,6 +443,77 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: IMPORT & MIGRASI DATA LAMA -->
+  <div id="import-modal" class="modal-overlay">
+    <div class="modal-dialog" style="max-width: 580px; padding: 24px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+          📥 Migrasi Data Aplikasi Lama ke iLaundry
+        </h3>
+        <button class="modal-close" onclick="closeImportModal()">&times;</button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+        Pindahkan riwayat transaksi, data pelanggan, dan catatan omset bulan-bulan lalu secara otomatis tanpa merusak data lama.
+      </p>
+
+      <!-- Pilihan Metode Import -->
+      <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+        <button id="tab-btn-sheet" class="btn btn-primary btn-sm" style="flex: 1;" onclick="switchImportMethod('sheet')">
+          📊 Dari Google Sheets / Excel (.xlsx)
+        </button>
+        <button id="tab-btn-csv" class="btn btn-secondary btn-sm" style="flex: 1;" onclick="switchImportMethod('csv')">
+          📄 Dari File CSV Langsung
+        </button>
+      </div>
+
+      <!-- METODE 1: VIA GOOGLE SHEETS / EXCEL UPLOAD -->
+      <div id="import-sheet-area">
+        <div style="background: var(--primary-soft); border: 1px dashed var(--primary); padding: 14px; border-radius: var(--radius-md); font-size: 0.82rem; margin-bottom: 16px;">
+          💡 <strong>Petunjuk untuk file Excel (.xlsx) / Spreadsheet:</strong><br>
+          1. Upload file Excel Anda ke Google Drive.<br>
+          2. Klik kanan ➔ <em>Buka dengan Google Spreadsheet</em>.<br>
+          3. Salin (Copy) link URL dari address bar browser, lalu tempel di bawah ini.
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label style="font-weight: 700; font-size: 0.88rem;">Link / URL Google Spreadsheet Lama *</label>
+          <input type="url" id="import-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/XXXXX/edit..." style="width: 100%;">
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="executeSpreadsheetMigration(true)">
+            🔍 Pindai Dulu (Dry-Run)
+          </button>
+          <button type="button" class="btn btn-primary" style="flex: 1;" onclick="executeSpreadsheetMigration(false)">
+            🚀 Mulai Migrasi Data
+          </button>
+        </div>
+      </div>
+
+      <!-- METODE 2: VIA CSV FILE -->
+      <div id="import-csv-area" style="display: none;">
+        <div style="background: #f8fafc; border: 1px dashed var(--border); padding: 14px; border-radius: var(--radius-md); font-size: 0.82rem; margin-bottom: 16px;">
+          💡 <strong>Pilih file .CSV dari komputer Anda:</strong><br>
+          Sistem otomatis mencocokkan kolom Tanggal, Nama, WhatsApp, Total Biaya, dll.
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label style="font-weight: 700; font-size: 0.88rem;">Pilih Berkas CSV (.csv)</label>
+          <input type="file" id="import-csv-file" accept=".csv" onchange="handleCsvFileSelected(event)" style="padding: 8px;">
+        </div>
+
+        <div id="csv-preview-info" style="font-size: 0.85rem; font-weight: 600; color: var(--primary); margin-bottom: 14px; display: none;"></div>
+
+        <button type="button" id="btn-run-csv-import" class="btn btn-primary" style="width: 100%; display: none;" onclick="executeCsvMigration()">
+          🚀 Impor Data CSV ke Database iLaundry
+        </button>
+      </div>
+
+      <!-- REPORT BOX -->
+      <div id="import-report-box" style="display: none; margin-top: 18px; padding: 14px; border-radius: var(--radius-md); font-size: 0.85rem; line-height: 1.4;"></div>
     </div>
   </div>
 

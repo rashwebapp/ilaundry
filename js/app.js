@@ -887,6 +887,182 @@ function handleLogout() {
 }
 
 // ============================================
+// MODUL MIGRASI DATA LAMA (SHEETS & CSV)
+// ============================================
+
+let parsedCsvOrders = [];
+
+function openImportModal() {
+  const modal = document.getElementById('import-modal');
+  if (modal) modal.classList.add('show');
+  resetImportState();
+}
+
+function closeImportModal() {
+  const modal = document.getElementById('import-modal');
+  if (modal) modal.classList.remove('show');
+}
+
+function resetImportState() {
+  const urlInput = document.getElementById('import-sheet-url');
+  if (urlInput) urlInput.value = '';
+  const fileInput = document.getElementById('import-csv-file');
+  if (fileInput) fileInput.value = '';
+  const reportBox = document.getElementById('import-report-box');
+  if (reportBox) {
+    reportBox.style.display = 'none';
+    reportBox.innerHTML = '';
+  }
+  const preview = document.getElementById('csv-preview-info');
+  if (preview) preview.style.display = 'none';
+  const btnCsv = document.getElementById('btn-run-csv-import');
+  if (btnCsv) btnCsv.style.display = 'none';
+  parsedCsvOrders = [];
+}
+
+function switchImportMethod(method) {
+  const sheetArea = document.getElementById('import-sheet-area');
+  const csvArea = document.getElementById('import-csv-area');
+  const btnSheet = document.getElementById('tab-btn-sheet');
+  const btnCsv = document.getElementById('tab-btn-csv');
+
+  if (method === 'sheet') {
+    sheetArea.style.display = 'block';
+    csvArea.style.display = 'none';
+    btnSheet.className = 'btn btn-primary btn-sm';
+    btnCsv.className = 'btn btn-secondary btn-sm';
+  } else {
+    sheetArea.style.display = 'none';
+    csvArea.style.display = 'block';
+    btnSheet.className = 'btn btn-secondary btn-sm';
+    btnCsv.className = 'btn btn-primary btn-sm';
+  }
+}
+
+async function executeSpreadsheetMigration(isDryRun) {
+  const url = document.getElementById('import-sheet-url').value.trim();
+  if (!url) {
+    showToast('Masukkan link Google Spreadsheet lama Anda.', 'error');
+    return;
+  }
+
+  showLoading(true, isDryRun ? 'Memindai data spreadsheet lama...' : 'Memigrasikan data ke database iLaundry...');
+  const res = await postToGAS('migrateFromSpreadsheet', {
+    source_url: url,
+    dry_run: isDryRun
+  });
+  showLoading(false);
+
+  const reportBox = document.getElementById('import-report-box');
+  if (reportBox) {
+    reportBox.style.display = 'block';
+    if (res.success) {
+      reportBox.style.background = isDryRun ? '#fef3c7' : '#d1fae5';
+      reportBox.style.border = `1px solid ${isDryRun ? '#f59e0b' : '#10b981'}`;
+      reportBox.style.color = isDryRun ? '#92400e' : '#065f46';
+      reportBox.innerHTML = `
+        <strong>${isDryRun ? '🔍 HASIL PEMINDAIAN (DRY-RUN):' : '✅ STATUS MIGRASI SELESAI:'}</strong><br>
+        ${res.message}<br><br>
+        • Total Baris Ditemukan: <strong>${res.report.totalFound}</strong><br>
+        • Data Baru Dimasukkan: <strong>${res.report.inserted}</strong><br>
+        • Data Dilewati (Sudah ada): <strong>${res.report.skipped}</strong><br>
+        • Total Omset Ditambahkan: <strong>${formatRupiah(res.report.totalRevenueAdded)}</strong>
+      `;
+
+      if (!isDryRun) {
+        showToast('Migrasi berhasil! Data kasir diperbarui.', 'success');
+        loadAllOrders();
+      }
+    } else {
+      reportBox.style.background = '#fee2e2';
+      reportBox.style.border = '1px solid #ef4444';
+      reportBox.style.color = '#991b1b';
+      reportBox.innerHTML = `<strong>❌ GAGAL MIGRASI:</strong><br>${res.message}`;
+    }
+  }
+}
+
+function handleCsvFileSelected(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const text = evt.target.result;
+    parsedCsvOrders = parseCsvText(text);
+
+    const preview = document.getElementById('csv-preview-info');
+    const btnRun = document.getElementById('btn-run-csv-import');
+
+    if (parsedCsvOrders.length > 0) {
+      preview.style.display = 'block';
+      preview.textContent = `✓ Berhasil membaca file: ${parsedCsvOrders.length} baris transaksi terdeteksi.`;
+      btnRun.style.display = 'block';
+    } else {
+      preview.style.display = 'block';
+      preview.textContent = `❌ File CSV kosong atau tidak memiliki baris data.`;
+      btnRun.style.display = 'none';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseCsvText(csv) {
+  const lines = csv.split(/\r\n|\n/).filter(line => line.trim() !== '');
+  if (lines.length <= 1) return [];
+
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+  const list = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+    if (cols.length === 0 || cols.join('').trim() === '') continue;
+
+    const obj = {};
+    headers.forEach((h, idx) => {
+      obj[h] = cols[idx] !== undefined ? cols[idx] : '';
+    });
+    list.push(obj);
+  }
+  return list;
+}
+
+async function executeCsvMigration() {
+  if (parsedCsvOrders.length === 0) {
+    showToast('Pilih berkas CSV terlebih dahulu.', 'error');
+    return;
+  }
+
+  showLoading(true, `Mengimpor ${parsedCsvOrders.length} transaksi CSV ke database...`);
+  const res = await postToGAS('importBatchOrders', { orders: parsedCsvOrders });
+  showLoading(false);
+
+  const reportBox = document.getElementById('import-report-box');
+  if (reportBox) {
+    reportBox.style.display = 'block';
+    if (res.success) {
+      reportBox.style.background = '#d1fae5';
+      reportBox.style.border = '1px solid #10b981';
+      reportBox.style.color = '#065f46';
+      reportBox.innerHTML = `
+        <strong>✅ SUKSES IMPORT CSV:</strong><br>
+        ${res.message}<br><br>
+        • Data Berhasil Masuk: <strong>${res.report.inserted}</strong><br>
+        • Data Dilewati (Sudah ada): <strong>${res.report.skipped}</strong><br>
+        • Total Omset Bertambah: <strong>${formatRupiah(res.report.totalRevenueAdded)}</strong>
+      `;
+      showToast('Import CSV berhasil!', 'success');
+      loadAllOrders();
+    } else {
+      reportBox.style.background = '#fee2e2';
+      reportBox.style.border = '1px solid #ef4444';
+      reportBox.style.color = '#991b1b';
+      reportBox.innerHTML = `<strong>❌ GAGAL:</strong><br>${res.message}`;
+    }
+  }
+}
+
+// ============================================
 // EVENT LISTENERS & BOOTSTRAP
 // ============================================
 
