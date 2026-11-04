@@ -387,14 +387,14 @@
       <!-- Tombol Aksi Kasir -->
       <div class="no-print" style="margin-top: 18px; display: flex; flex-direction: column; gap: 8px;">
         <div style="display: flex; gap: 8px;">
-          <button class="btn btn-primary" style="flex: 1;" onclick="printReceipt()">
+          <button type="button" class="btn btn-primary" style="flex: 1;" onclick="printReceipt()">
             🖨️ Cetak Struk
           </button>
-          <button class="btn btn-success" style="flex: 1;" onclick="sendReceiptToWhatsApp()">
+          <a id="rcp-btn-wa" href="#" target="_blank" class="btn btn-success" style="flex: 1; text-decoration: none;">
             📲 Kirim ke WA
-          </button>
+          </a>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="closeReceiptModal()">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeReceiptModal()">
           ✕ Selesai / Tutup
         </button>
       </div>

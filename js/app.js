@@ -554,12 +554,29 @@ async function handleUpdateStatus(id_pesanan, status_cucian = null, status_bayar
   }
 }
 
-function sendWhatsAppReceipt(id_pesanan) {
-  const order = state.orders.find(o => o.id_pesanan === id_pesanan) || activeReceiptOrder;
-  if (!order) return;
+function formatIndonesianPhone(phone) {
+  let clean = String(phone || '').replace(/\D/g, '');
+  if (clean.startsWith('0')) {
+    clean = '62' + clean.slice(1);
+  } else if (clean.startsWith('8')) {
+    clean = '62' + clean;
+  }
+  return clean;
+}
 
-  const cleanPhone = (order.no_whatsapp || '').replace(/\D/g, '');
-  const targetPhone = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
+function sendWhatsAppReceipt(id_pesanan) {
+  const order = (state.orders && state.orders.find(o => String(o.id_pesanan).trim() === String(id_pesanan).trim())) || activeReceiptOrder;
+  if (!order) {
+    showToast('Data pesanan tidak ditemukan.', 'error');
+    return;
+  }
+
+  const targetPhone = formatIndonesianPhone(order.no_whatsapp);
+  if (!targetPhone) {
+    showToast('Nomor WhatsApp pelanggan tidak valid atau kosong.', 'error');
+    return;
+  }
+
   const directUrl = `${window.location.origin}${window.location.pathname}?resi=${encodeURIComponent(order.id_pesanan)}`;
 
   const message = `Halo Kak *${order.nama_pelanggan}*, terima kasih telah mencuci di *iLaundry* 🧺.%0A%0A` +
@@ -572,7 +589,20 @@ function sendWhatsAppReceipt(id_pesanan) {
     `🔍 *Pantau langsung proses cucian Anda di sini:*%0A${encodeURIComponent(directUrl)}%0A%0A` +
     `Terima kasih atas kepercayaan Anda! 🙏`;
 
-  window.open(`https://wa.me/${targetPhone}?text=${message}`, '_blank');
+  const waUrl = `https://wa.me/${targetPhone}?text=${message}`;
+
+  // Buka tab WhatsApp
+  const newWin = window.open(waUrl, '_blank');
+  if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
+    // Jika popup diblokir oleh browser, buat elemen link dan trigger klik langsung
+    const link = document.createElement('a');
+    link.href = waUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
 }
 
 // ============================================
@@ -582,7 +612,7 @@ function sendWhatsAppReceipt(id_pesanan) {
 let activeReceiptOrder = null;
 
 function openReceiptModalByResi(id_pesanan) {
-  const order = state.orders.find(o => o.id_pesanan === id_pesanan);
+  const order = state.orders.find(o => String(o.id_pesanan).trim() === String(id_pesanan).trim());
   if (order) {
     openReceiptModal(order);
   } else {
@@ -597,6 +627,19 @@ function openReceiptModal(order) {
 
   const directUrl = `${window.location.origin}${window.location.pathname}?resi=${encodeURIComponent(order.id_pesanan)}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(directUrl)}`;
+  const targetPhone = formatIndonesianPhone(order.no_whatsapp);
+
+  const message = `Halo Kak *${order.nama_pelanggan}*, terima kasih telah mencuci di *iLaundry* 🧺.%0A%0A` +
+    `Berikut rincian nota pesanan Anda:%0A` +
+    `🔖 *No. Resi:* ${order.id_pesanan}%0A` +
+    `📦 *Layanan:* ${order.layanan} (${order.jumlah})%0A` +
+    `💰 *Total Biaya:* ${formatRupiah(order.total_biaya)}%0A` +
+    `💳 *Status Bayar:* ${order.status_bayar}%0A` +
+    `🔄 *Progres Cucian:* ${order.status_cucian}%0A%0A` +
+    `🔍 *Pantau langsung proses cucian Anda di sini:*%0A${encodeURIComponent(directUrl)}%0A%0A` +
+    `Terima kasih atas kepercayaan Anda! 🙏`;
+
+  const waUrl = `https://wa.me/${targetPhone}?text=${message}`;
 
   document.getElementById('rcp-cs-phone').textContent = `WA: ${CONFIG.PHONE_CONTACT || '-'}`;
   document.getElementById('rcp-id').textContent = order.id_pesanan || '-';
@@ -612,6 +655,11 @@ function openReceiptModal(order) {
   document.getElementById('rcp-qr-img').src = qrUrl;
   document.getElementById('rcp-direct-url').textContent = directUrl;
 
+  const btnWa = document.getElementById('rcp-btn-wa');
+  if (btnWa) {
+    btnWa.href = waUrl;
+  }
+
   modal.classList.add('show');
 }
 
@@ -623,11 +671,6 @@ function closeReceiptModal() {
 
 function printReceipt() {
   window.print();
-}
-
-function sendReceiptToWhatsApp() {
-  if (!activeReceiptOrder) return;
-  sendWhatsAppReceipt(activeReceiptOrder.id_pesanan);
 }
 
 // ============================================
