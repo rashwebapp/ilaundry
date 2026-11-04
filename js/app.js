@@ -110,6 +110,12 @@ function formatRupiah(number) {
 // ============================================
 
 function switchTab(tabId) {
+  // Cegah akses langsung ke tab admin tanpa otentikasi PIN
+  if (tabId === 'admin' && !isAdminAuthenticated()) {
+    openPinModal();
+    return;
+  }
+
   state.currentTab = tabId;
 
   // Toggle class active pada tombol navigasi
@@ -787,6 +793,65 @@ async function handleDeleteService(id) {
 }
 
 // ============================================
+// OTENTIKASI & KEAMANAN PANEL KASIR (PIN)
+// ============================================
+
+function isAdminAuthenticated() {
+  return sessionStorage.getItem('ilaundry_admin_auth') === 'true';
+}
+
+function requestAdminAccess() {
+  if (isAdminAuthenticated()) {
+    switchTab('admin');
+  } else {
+    openPinModal();
+  }
+}
+
+function openPinModal() {
+  const modal = document.getElementById('pin-modal');
+  const input = document.getElementById('pin-input');
+  if (modal) {
+    modal.classList.add('show');
+    if (input) {
+      input.value = '';
+      setTimeout(() => input.focus(), 150);
+    }
+  }
+}
+
+function closePinModal() {
+  const modal = document.getElementById('pin-modal');
+  if (modal) modal.classList.remove('show');
+}
+
+function handlePinSubmit(e) {
+  e.preventDefault();
+  const inputPin = document.getElementById('pin-input').value.trim();
+  const correctPin = String(CONFIG.ADMIN_PIN || '1234').trim();
+
+  if (inputPin === correctPin) {
+    sessionStorage.setItem('ilaundry_admin_auth', 'true');
+    closePinModal();
+    showToast('Akses kasir berhasil dibuka.', 'success');
+    switchTab('admin');
+  } else {
+    showToast('PIN Kasir salah! Akses ditolak.', 'error');
+    const input = document.getElementById('pin-input');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+  }
+}
+
+function logoutAdmin() {
+  sessionStorage.removeItem('ilaundry_admin_auth');
+  showToast('Panel Kasir berhasil dikunci.', 'info');
+  switchTab('tracking');
+}
+
+// ============================================
 // EVENT LISTENERS & BOOTSTRAP
 // ============================================
 
@@ -794,6 +859,12 @@ function checkUrlParams() {
   const urlParams = new URLSearchParams(window.location.search);
   const resi = urlParams.get('resi');
   if (resi) {
+    // Mode Khusus Pelanggan: Sembunyikan menu Kasir dan Order Baru dari navbar
+    const navAdmin = document.getElementById('nav-item-admin');
+    const navOrder = document.getElementById('nav-item-order');
+    if (navAdmin) navAdmin.style.display = 'none';
+    if (navOrder) navOrder.style.display = 'none';
+
     switchTab('tracking');
     const input = document.getElementById('track-input');
     if (input) input.value = resi;

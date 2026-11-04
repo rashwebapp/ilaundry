@@ -29,13 +29,13 @@
             📋 Katalog & Tarif
           </button>
         </li>
-        <li class="nav-item">
+        <li class="nav-item" id="nav-item-order">
           <button id="nav-order" onclick="switchTab('order')">
             ➕ Order Baru
           </button>
         </li>
-        <li class="nav-item">
-          <button id="nav-admin" onclick="switchTab('admin')">
+        <li class="nav-item" id="nav-item-admin">
+          <button id="nav-admin" onclick="requestAdminAccess()">
             ⚙️ Panel Kasir
           </button>
         </li>
@@ -201,6 +201,9 @@
             </button>
             <button class="btn btn-secondary btn-sm" onclick="loadAllOrders()">
               🔄 Refresh Data
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="logoutAdmin()" title="Kunci Akses Kasir">
+              🔒 Kunci Kasir
             </button>
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
@@ -398,6 +401,28 @@
           ✕ Selesai / Tutup
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LOGIN PIN KASIR -->
+  <div id="pin-modal" class="modal-overlay">
+    <div class="modal-dialog" style="max-width: 360px; text-align: center; padding: 28px 20px;">
+      <div style="font-size: 2.5rem; margin-bottom: 8px;">🔐</div>
+      <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 6px;">Keamanan Panel Kasir</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+        Halaman ini khusus untuk pengelola laundry. Masukkan PIN Kasir untuk membuka data:
+      </p>
+
+      <form id="pin-form" onsubmit="handlePinSubmit(event)">
+        <div style="margin-bottom: 18px;">
+          <input type="password" id="pin-input" maxlength="10" placeholder="••••" 
+                 style="font-size: 1.8rem; letter-spacing: 8px; text-align: center; padding: 10px; width: 180px; border-radius: var(--radius-md); border: 2px solid var(--primary); outline: none;" required>
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: center;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">Buka Panel</button>
+          <button type="button" class="btn btn-secondary" onclick="closePinModal()">Batal</button>
+        </div>
+      </form>
     </div>
   </div>
 
