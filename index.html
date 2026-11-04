@@ -322,6 +322,85 @@
     </div>
   </div>
 
+  <!-- MODAL: STRUK NOTA & CETAK PRINTER (THERMAL 58mm/80mm) -->
+  <div id="receipt-modal" class="modal-overlay">
+    <div class="modal-dialog" style="max-width: 420px; padding: 20px;">
+      <div class="modal-header no-print">
+        <h3 style="font-size: 1.1rem; font-weight: 700;">🧾 Struk Transaksi Laundry</h3>
+        <button class="modal-close" onclick="closeReceiptModal()">&times;</button>
+      </div>
+
+      <!-- Template Struk Siap Cetak -->
+      <div id="printable-receipt-area" class="receipt-box">
+        <div class="receipt-header">
+          <h3>🧺 iLaundry</h3>
+          <p>Layanan Cuci Bersih & Higienis</p>
+          <p id="rcp-cs-phone">WA: -</p>
+        </div>
+
+        <div class="receipt-row">
+          <span>No. Resi:</span>
+          <strong id="rcp-id">-</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Tanggal:</span>
+          <span id="rcp-date">-</span>
+        </div>
+        <div class="receipt-row">
+          <span>Pelanggan:</span>
+          <span id="rcp-cust">-</span>
+        </div>
+        <div class="receipt-row">
+          <span>WhatsApp:</span>
+          <span id="rcp-wa">-</span>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <div class="receipt-row">
+          <span id="rcp-service">-</span>
+          <span id="rcp-qty">-</span>
+        </div>
+        <div class="receipt-row" style="color: #64748b; font-size: 0.72rem;">
+          <span id="rcp-notes">-</span>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <div class="receipt-total">
+          <span>TOTAL:</span>
+          <span id="rcp-total">Rp 0</span>
+        </div>
+        <div class="receipt-row" style="margin-top: 4px;">
+          <span>Status Bayar:</span>
+          <strong id="rcp-pay-status">-</strong>
+        </div>
+
+        <div class="receipt-qr">
+          <p>Scan untuk Lacak Cucian:</p>
+          <img id="rcp-qr-img" src="" alt="QR Resi">
+          <p id="rcp-direct-url" style="word-break: break-all; font-size: 0.65rem; color: #475569; margin-top: 2px;">-</p>
+          <p style="margin-top: 6px; font-size: 0.7rem;">Terima Kasih Atas Kepercayaan Anda! 🙏</p>
+        </div>
+      </div>
+
+      <!-- Tombol Aksi Kasir -->
+      <div class="no-print" style="margin-top: 18px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary" style="flex: 1;" onclick="printReceipt()">
+            🖨️ Cetak Struk
+          </button>
+          <button class="btn btn-success" style="flex: 1;" onclick="sendReceiptToWhatsApp()">
+            📲 Kirim ke WA
+          </button>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="closeReceiptModal()">
+          ✕ Selesai / Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- TOAST CONTAINER -->
   <div id="toast-container" class="toast-container"></div>
 

@@ -298,11 +298,25 @@ async function handleCreateOrder(e) {
     e.target.reset();
     calculateOrderTotal();
 
-    // Otomatis arahkan ke hasil tracking
+    // Otomatis arahkan ke hasil tracking dan buka struk digital siap cetak
     if (res.data && res.data.id_pesanan) {
       document.getElementById('track-input').value = res.data.id_pesanan;
       switchTab('tracking');
       handleTrackSearch(null, res.data.id_pesanan);
+
+      const createdOrder = {
+        id_pesanan: res.data.id_pesanan,
+        timestamp: new Date().toLocaleString('id-ID'),
+        nama_pelanggan: payload.nama_pelanggan,
+        no_whatsapp: payload.no_whatsapp,
+        layanan: payload.layanan,
+        jumlah: payload.jumlah,
+        total_biaya: payload.total_biaya,
+        status_bayar: 'Belum Lunas',
+        status_cucian: 'Diterima',
+        catatan: payload.catatan
+      };
+      openReceiptModal(createdOrder);
     }
   } else {
     showToast(res.message || 'Gagal menyimpan pesanan.', 'error');
@@ -487,9 +501,14 @@ function renderAdminOrdersTable(orders) {
           </select>
         </td>
         <td>
-          <button class="btn btn-secondary btn-sm" onclick="sendWhatsAppReceipt('${order.id_pesanan}')" title="Kirim Nota via WA">
-            📲 Nota
-          </button>
+          <div style="display:flex;gap:4px;">
+            <button class="btn btn-primary btn-sm" onclick="openReceiptModalByResi('${order.id_pesanan}')" title="Cetak Struk Thermal">
+              🖨️ Struk
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="sendWhatsAppReceipt('${order.id_pesanan}')" title="Kirim Nota via WA">
+              📲 WA
+            </button>
+          </div>
         </td>
       </tr>
     `;
@@ -536,11 +555,12 @@ async function handleUpdateStatus(id_pesanan, status_cucian = null, status_bayar
 }
 
 function sendWhatsAppReceipt(id_pesanan) {
-  const order = state.orders.find(o => o.id_pesanan === id_pesanan);
+  const order = state.orders.find(o => o.id_pesanan === id_pesanan) || activeReceiptOrder;
   if (!order) return;
 
   const cleanPhone = (order.no_whatsapp || '').replace(/\D/g, '');
   const targetPhone = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
+  const directUrl = `${window.location.origin}${window.location.pathname}?resi=${encodeURIComponent(order.id_pesanan)}`;
 
   const message = `Halo Kak *${order.nama_pelanggan}*, terima kasih telah mencuci di *iLaundry* 🧺.%0A%0A` +
     `Berikut rincian nota pesanan Anda:%0A` +
@@ -549,9 +569,65 @@ function sendWhatsAppReceipt(id_pesanan) {
     `💰 *Total Biaya:* ${formatRupiah(order.total_biaya)}%0A` +
     `💳 *Status Bayar:* ${order.status_bayar}%0A` +
     `🔄 *Progres Cucian:* ${order.status_cucian}%0A%0A` +
-    `Anda dapat memantau status cucian secara langsung kapan saja di tautan website iLaundry. Terima kasih! 🙏`;
+    `🔍 *Pantau langsung proses cucian Anda di sini:*%0A${encodeURIComponent(directUrl)}%0A%0A` +
+    `Terima kasih atas kepercayaan Anda! 🙏`;
 
   window.open(`https://wa.me/${targetPhone}?text=${message}`, '_blank');
+}
+
+// ============================================
+// MODAL: STRUK TRANSAKSI & CETAK THERMAL PRINTER
+// ============================================
+
+let activeReceiptOrder = null;
+
+function openReceiptModalByResi(id_pesanan) {
+  const order = state.orders.find(o => o.id_pesanan === id_pesanan);
+  if (order) {
+    openReceiptModal(order);
+  } else {
+    showToast('Data pesanan tidak ditemukan.', 'error');
+  }
+}
+
+function openReceiptModal(order) {
+  activeReceiptOrder = order;
+  const modal = document.getElementById('receipt-modal');
+  if (!modal) return;
+
+  const directUrl = `${window.location.origin}${window.location.pathname}?resi=${encodeURIComponent(order.id_pesanan)}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(directUrl)}`;
+
+  document.getElementById('rcp-cs-phone').textContent = `WA: ${CONFIG.PHONE_CONTACT || '-'}`;
+  document.getElementById('rcp-id').textContent = order.id_pesanan || '-';
+  document.getElementById('rcp-date').textContent = order.timestamp || new Date().toLocaleString('id-ID');
+  document.getElementById('rcp-cust').textContent = order.nama_pelanggan || '-';
+  document.getElementById('rcp-wa').textContent = order.no_whatsapp || '-';
+  document.getElementById('rcp-service').textContent = order.layanan || '-';
+  document.getElementById('rcp-qty').textContent = `${order.jumlah || 1}`;
+  document.getElementById('rcp-notes').textContent = order.catatan ? `Catatan: ${order.catatan}` : '';
+  document.getElementById('rcp-total').textContent = formatRupiah(order.total_biaya || 0);
+  document.getElementById('rcp-pay-status').textContent = order.status_bayar || 'Belum Lunas';
+  document.getElementById('rcp-pay-status').style.color = order.status_bayar === 'Lunas' ? '#10b981' : '#dc2626';
+  document.getElementById('rcp-qr-img').src = qrUrl;
+  document.getElementById('rcp-direct-url').textContent = directUrl;
+
+  modal.classList.add('show');
+}
+
+function closeReceiptModal() {
+  const modal = document.getElementById('receipt-modal');
+  if (modal) modal.classList.remove('show');
+  activeReceiptOrder = null;
+}
+
+function printReceipt() {
+  window.print();
+}
+
+function sendReceiptToWhatsApp() {
+  if (!activeReceiptOrder) return;
+  sendWhatsAppReceipt(activeReceiptOrder.id_pesanan);
 }
 
 // ============================================
@@ -671,6 +747,18 @@ async function handleDeleteService(id) {
 // EVENT LISTENERS & BOOTSTRAP
 // ============================================
 
+function checkUrlParams() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const resi = urlParams.get('resi');
+  if (resi) {
+    switchTab('tracking');
+    const input = document.getElementById('track-input');
+    if (input) input.value = resi;
+    handleTrackSearch(null, resi);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
+  checkUrlParams();
 });
