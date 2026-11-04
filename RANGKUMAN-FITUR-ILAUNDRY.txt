@@ -1,0 +1,128 @@
+================================================================================
+                    RANGKUMAN FITUR & DOKUMENTASI SISTEM
+                             iLAUNDRY EXPRESS
+================================================================================
+
+Tanggal Pembuatan : 5 November 2026
+Arsitektur        : Decoupled Full-Stack (GAS-PRO-API)
+  - Frontend      : HTML5, Vanilla CSS3 (Custom Responsive), Vanilla JavaScript
+  - Deployment    : GitHub Pages (SSL Gratis, CDN Global)
+  - Backend       : Google Apps Script (Pure REST API via ContentService JSON)
+  - Database      : Google Sheets (🗃️ Database — iLaundry) & Google Drive Storage
+  - WA Gateway    : Fonnte API Gateway (Automated Push Notification)
+
+--------------------------------------------------------------------------------
+1. INFORMASI AKSES & TAUTAN SISTEM
+--------------------------------------------------------------------------------
+* Website Publik & Kasir : https://rashwebapp.github.io/ilaundry/
+* Backend API Endpoint  : https://script.google.com/macros/s/AKfycbyJwI96WO7JLOn2hFAFRU7KvWYwHq7i_hjoUk7h8979W6wBuK4fJZFH0m97aSSfHBc0/exec
+* Repository GitHub     : https://github.com/rashwebapp/ilaundry
+
+* Akses Panel Kasir (Default):
+  - Username : admin
+  - Password : 1234
+  (Disimpan aman di LocalStorage 'ilaundry_cashier_session', bisa logout kapan saja)
+
+--------------------------------------------------------------------------------
+2. FITUR LENGKAP YANG TELAH SELESAI
+--------------------------------------------------------------------------------
+
+A. PORTAL PUBLIK PELANGGAN (Bisa Diakses Pelanggan Kapan Saja)
+   1. Live Stepper Tracking:
+      - Pelanggan dapat melacak cucian dengan memasukkan Nomor Resi (misal: IL-2411-001)
+        atau Nomor WhatsApp (misal: 081234567890).
+      - Visualisasi progres status cucian dalam 4 tahapan jelas:
+        [Diterima] ➔ [Dicuci] ➔ [Siap Diambil] ➔ [Selesai]
+      - Menampilkan rincian tanggal masuk, jenis layanan, berat/jumlah, total tagihan,
+        serta status pembayaran (Lunas / Belum Lunas).
+   2. Direct Link Tracking:
+      - Link pelacakan otomatis dapat langsung dibuka via URL:
+        https://rashwebapp.github.io/ilaundry/?resi=NOMOR_RESI
+   3. Simulasi Tarif & Katalog Layanan:
+      - Kalkulator estimasi biaya laundry instan sebelum pelanggan menyerahkan pakaian.
+      - Memilih jenis layanan (Kiloan, Satuan, Express, Bedcover, Sepatu, dll),
+        memasukkan perkiraan berat/jumlah, dan biaya langsung terhitung otomatis.
+      - Menampilkan katalog harga lengkap beserta estimasi hari pengerjaan.
+
+B. PANEL KASIR & OPERASIONAL (Terlindungi Sistem Login)
+   1. Autentikasi Kasir:
+      - Menu "Order Baru" dan "Panel Kasir" terkunci rapat dari publik.
+      - Pelanggan umum hanya melihat Lacak Resi dan Katalog Tarif.
+   2. Input Order Baru (Kasir):
+      - Pembuatan nomor resi otomatis terstandar berurutan (Contoh: IL-2411-001).
+      - Pemilihan layanan real-time yang langsung mengkalkulasi total harga.
+      - Input catatan khusus pelanggan (misal: pakaian putih dipisahkan, sepatu suede).
+      - Opsi status pembayaran: Lunas atau Belum Lunas.
+   3. Cetak Nota POS Thermal 58mm:
+      - Popup nota struk otomatis muncul seketika setelah order berhasil disimpan.
+      - Desain CSS khusus @media print 58mm (kertas thermal printer kasir):
+        * Header rapi dengan nama laundry & nomor kontak.
+        * Rincian item, berat, tarif, total biaya, status lunas.
+        * Footer dengan barcode/nomor resi dan link pelacakan online.
+        * Margin pas, tanpa terpotong, dan bebas dari elemen antarmuka browser.
+   4. Manajemen Status Cucian:
+      - Kasir dapat memperbarui tahapan cucian: Diterima, Dicuci, Siap Diambil, Selesai.
+      - Kasir dapat mengubah status pembayaran (Belum Lunas ➔ Lunas) dengan 1 klik.
+   5. Master Data Layanan (CRUD Admin):
+      - Tambah layanan baru, ubah harga/tarif, ganti satuan (Kg/Pcs/Pasang),
+        atur estimasi hari kerja, atau nonaktifkan layanan lama.
+
+C. HALAMAN REKAP BULANAN & ANALISIS PENJUALAN (BARU)
+   1. Filter Bulan Transaksi:
+      - Kasir dapat memfilter rekapitulasi data berdasarkan bulan dan tahun.
+   2. Metrik Ringkasan Finansial:
+      - Total Omset / Pendapatan per bulan yang dipilih.
+      - Total Transaksi / Nota yang masuk pada bulan tersebut.
+      - Total Berat / Pcs Cucian yang diproses.
+   3. Analisis Layanan Terlaris (Leaderboard Visual):
+      - Diagram batang persentase visual yang menunjukkan layanan apa saja yang
+        paling banyak diminati dan dipesan oleh pelanggan.
+      - Membantu pemilik laundry mengambil keputusan promo dan stok deterjen/pewangi.
+   4. Tabel Rincian Rekap:
+      - Daftar riwayat transaksi per baris yang bisa dicek sewaktu-waktu.
+
+D. MODUL MIGRASI & IMPORT DATABASE OTOMATIS (BARU)
+   1. Migrasi dari Google Spreadsheet Lama:
+      - Cukup masukkan Spreadsheet ID lama, sistem langsung menyalin transaksi lama.
+   2. Import Massal via CSV:
+      - Mendukung upload file data pelanggan lama berformat CSV.
+   3. Fitur Aman & Cerdas:
+      - Dilengkapi tombol "Tes Pemindaian (Dry Run)" untuk mengecek data tanpa risiko.
+      - Otomatis melewati (skip) nomor resi yang sudah ada agar data omset tidak dobel.
+
+E. INTEGRASI WHATSAPP GATEWAY (FONNTE API)
+   1. Otomatis Kirim Nota Saat Order Masuk:
+      - Ketika kasir klik "Simpan Order", sistem backend Apps Script otomatis
+        menghubungi API Fonnte untuk mengirim nota + link tracking langsung ke WA pelanggan.
+   2. Otomatis Kirim Notifikasi Saat Cucian Selesai:
+      - Saat status diubah menjadi "Siap Diambil", pesan WA pemberitahuan otomatis
+        terkirim ke pelanggan agar pakaian segera diambil.
+   3. Backup Manual 100% Gratis Selamanya:
+      - Tombol manual "Kirim WA Nota" tetap tersedia di layar kasir. Jika kuota Fonnte
+        habis atau nomor terputus, kasir tetap bisa mengirim nota via WhatsApp Web/App
+        tanpa biaya tambahan sepeser pun.
+
+--------------------------------------------------------------------------------
+3. STRUKTUR FOLDER PROYEK
+--------------------------------------------------------------------------------
+📁 3.app ilaundry/
+│
+├── 📁 backend/
+│   └── 📄 Kode.gs                 <-- Kode Backend Apps Script (API & Fonnte)
+│
+├── 📁 ilaundry/                   <-- Source Code Frontend (GitHub Pages)
+│   ├── 📄 index.html              <-- Halaman Utama Single Page Application (SPA)
+│   ├── 📁 css/
+│   │   └── 📄 style.css           <-- Styling responsif, tema modern & cetak thermal
+│   ├── 📁 js/
+│   │   ├── 📄 config.js           <-- Konfigurasi URL API & Kredensial Kasir
+│   │   └── 📄 app.js              <-- Logika interaktif, REST API fetch, Analytics
+│   └── 📄 README.md               <-- Petunjuk teknis repository
+│
+├── 📄 ilaundry-frontend.zip       <-- Arsip ZIP frontend siap unduh/deploy
+├── 📄 PANDUAN-DEPLOY.md           <-- Panduan langkah demi langkah deploy
+└── 📄 RANGKUMAN-FITUR-ILAUNDRY.txt<-- Dokumen ini
+
+================================================================================
+                    SISTEM ILAUNDRY TELAH SIAP DIGUNAKAN!
+================================================================================

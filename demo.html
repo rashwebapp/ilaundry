@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iLaundry — Mode Demo Interaktif (Sandbox)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- TOP DEMO BANNER -->
+  <div class="demo-banner">
+    <div class="container demo-banner-content">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <span class="demo-badge">🧪 MODE DEMO INTERAKTIF</span>
+        <span style="font-size: 0.84rem; opacity: 0.95;">
+          Lingkungan simulasi sandbox (100% aman tanpa mempengaruhi database toko asli).
+        </span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 0.8rem; background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 4px;">
+          Kasir Demo: <strong>admin</strong> / <strong>demo123</strong>
+        </span>
+        <button class="btn-demo-reset" onclick="resetDemoData()">🔄 Reset Data Demo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="#" class="brand" onclick="switchTab('tracking'); return false;">
+        <div class="brand-icon">🧺</div>
+        <span>iLaundry <small style="font-size: 0.65rem; background: var(--primary-light); color: var(--primary); padding: 2px 6px; border-radius: 4px; vertical-align: middle;">DEMO</small></span>
+      </a>
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <ul class="nav-links">
+          <li class="nav-item">
+            <button id="nav-tracking" class="active" onclick="switchTab('tracking')">
+              🔍 Lacak Cucian
+            </button>
+          </li>
+          <li class="nav-item">
+            <button id="nav-catalog" onclick="switchTab('catalog')">
+              📋 Katalog & Tarif
+            </button>
+          </li>
+          <li class="nav-item" id="nav-item-order" style="display: none;">
+            <button id="nav-order" onclick="switchTab('order')">
+              ➕ Order Baru
+            </button>
+          </li>
+          <li class="nav-item" id="nav-item-admin" style="display: none;">
+            <button id="nav-admin" onclick="switchTab('admin')">
+              ⚙️ Panel Kasir
+            </button>
+          </li>
+        </ul>
+        <div id="nav-auth-container">
+          <button id="btn-login-trigger" class="btn btn-secondary btn-sm" onclick="openLoginModal()" style="font-weight: 700;">
+            🔑 Login Kasir Demo
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <header class="hero-section">
+    <div class="container">
+      <h1 class="hero-title">Cucian Bersih, Rapi & Higienis</h1>
+      <p class="hero-subtitle">Pantau progres laundry Anda secara real-time kapan saja dari kenyamanan genggaman Anda.</p>
+      
+      <!-- HERO QUICK SEARCH -->
+      <form id="hero-search-form" class="search-box-card" onsubmit="handleTrackSearch(event)">
+        <input type="text" id="track-input" placeholder="Ketik No. Resi (contoh: IL-2611-002) atau No. WhatsApp (085211223344)..." required>
+        <button type="submit" id="btn-hero-search">
+          <span>Lacak Sekarang</span> ➜
+        </button>
+      </form>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="container">
+
+    <!-- VIEW 1: TRACKING RESI -->
+    <section id="view-tracking" class="view-section active">
+      <div id="tracking-result-area">
+        <!-- Default State: Promo / Edukasi Alur -->
+        <div class="card" style="text-align: center; padding: 40px 20px;">
+          <div style="font-size: 3rem; margin-bottom: 12px;">✨</div>
+          <h2 class="card-title">Cek Status Pengerjaan Laundry</h2>
+          <p class="card-subtitle" style="max-width: 500px; margin: 0 auto 20px;">
+            Masukkan nomor resi yang tercetak pada struk nota atau nomor WhatsApp yang Anda daftarkan saat menitipkan cucian pada form pencarian di atas.
+          </p>
+          <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+            <span class="badge badge-primary">Diterima</span> ➔
+            <span class="badge badge-primary">Dicuci</span> ➔
+            <span class="badge badge-primary">Dikeringkan</span> ➔
+            <span class="badge badge-primary">Disetrika</span> ➔
+            <span class="badge badge-success">Siap Diambil</span>
+          </div>
+          <div style="margin-top: 18px; font-size: 0.85rem; color: var(--text-muted);">
+            💡 <em>Tips Demo: Coba ketik resi contoh <strong>IL-2611-001</strong> atau nomor WA <strong>081234567890</strong> pada kolom cari di atas!</em>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: KATALOG LAYANAN & SIMULATOR BIAYA -->
+    <section id="view-catalog" class="view-section">
+      <div class="card">
+        <h2 class="card-title">Katalog Layanan & Estimasi Biaya</h2>
+        <p class="card-subtitle">Daftar harga transparan tanpa biaya tersembunyi. Gunakan simulator untuk menghitung perkiraan total tagihan Anda.</p>
+        
+        <!-- Calculator Box -->
+        <div style="background: var(--primary-soft); padding: 18px; border-radius: var(--radius-md); border: 1px dashed var(--primary); margin-bottom: 24px;">
+          <h3 style="font-size: 1rem; color: var(--primary); font-weight: 700; margin-bottom: 12px;">🧮 Simulator Hitung Cepat</h3>
+          <div class="form-grid" style="margin-bottom: 0;">
+            <div class="form-group">
+              <label>Pilih Layanan</label>
+              <select id="sim-layanan" onchange="calculateSimulation()"></select>
+            </div>
+            <div class="form-group">
+              <label>Jumlah / Berat (<span id="sim-unit-label">Kg</span>)</label>
+              <input type="number" id="sim-qty" value="3" min="0.5" step="0.5" oninput="calculateSimulation()">
+            </div>
+            <div class="form-group" style="justify-content: flex-end;">
+              <div style="font-size: 0.85rem; color: var(--text-muted);">Estimasi Total:</div>
+              <div id="sim-total" style="font-size: 1.45rem; font-weight: 800; color: var(--primary);">Rp 0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Catalog Grid -->
+        <div id="catalog-container" class="catalog-grid">
+          <div style="text-align: center; grid-column: 1/-1; padding: 30px;">Memuat katalog harga...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: FORM ORDER BARU -->
+    <section id="view-order" class="view-section">
+      <div class="card" style="max-width: 680px; margin: 0 auto;">
+        <h2 class="card-title">📝 Buat Pesanan Baru (Kasir Demo)</h2>
+        <p class="card-subtitle">Formulir pendaftaran cucian baru untuk pelanggan maupun kasir.</p>
+
+        <form id="order-form" onsubmit="handleCreateOrder(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="order-nama">Nama Lengkap Pelanggan *</label>
+              <input type="text" id="order-nama" placeholder="Contoh: Andi Wijaya" required>
+            </div>
+            <div class="form-group">
+              <label for="order-wa">No. WhatsApp Aktif *</label>
+              <input type="tel" id="order-wa" placeholder="Contoh: 081298765432" required>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="order-layanan">Pilih Paket Layanan *</label>
+              <select id="order-layanan" onchange="handleOrderServiceChange()" required>
+                <option value="">-- Pilih Layanan --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="order-qty">Jumlah / Berat (<span id="order-unit-label">Kg</span>) *</label>
+              <input type="number" id="order-qty" value="3.5" min="0.1" step="0.1" oninput="calculateOrderTotal()" required>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label for="order-catatan">Catatan Khusus (Opsional)</label>
+            <textarea id="order-catatan" rows="2" placeholder="Contoh: Pakaian luntur harap dipisah, detergen hypoallergenic, dll."></textarea>
+          </div>
+
+          <!-- Total Ringkasan Box -->
+          <div style="background: #f8fafc; border: 1px solid var(--border); padding: 16px; border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div>
+              <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">TOTAL ESTIMASI BIAYA</div>
+              <div id="order-total-preview" style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">Rp 0</div>
+            </div>
+            <span class="badge badge-warning">Simulasi Pembayaran Kasir</span>
+          </div>
+
+          <button type="submit" id="btn-submit-order" class="btn btn-primary" style="width: 100%;">
+            💾 Simpan Pesanan & Terbitkan Resi (Demo)
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- VIEW 4: PANEL KASIR & KELOLA LAYANAN -->
+    <section id="view-admin" class="view-section">
+      <!-- Sub-Navigasi Panel Kasir -->
+      <div style="display: flex; gap: 8px; margin-bottom: 22px;">
+        <button id="sub-nav-orders" class="btn btn-primary" onclick="switchAdminSubView('orders')">
+          📋 Antrean Transaksi
+        </button>
+        <button id="sub-nav-recap" class="btn btn-secondary" onclick="switchAdminSubView('recap')">
+          📊 Rekap Bulanan & Layanan Terlaris
+        </button>
+      </div>
+
+      <!-- SUB-VIEW 1: ANTREAN TRANSAKSI -->
+      <div id="admin-sub-orders">
+        <!-- Admin Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Pesanan Demo</div>
+            <div id="stat-total" class="stat-value">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Sedang Diproses</div>
+            <div id="stat-active" class="stat-value" style="color: var(--primary);">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Siap Diambil</div>
+            <div id="stat-ready" class="stat-value" style="color: var(--accent);">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Omset Simulasi</div>
+            <div id="stat-revenue" class="stat-value" style="font-size: 1.35rem;">Rp 0</div>
+          </div>
+        </div>
+
+        <!-- Action & Filter Bar -->
+        <div class="card" style="padding: 16px 20px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-primary btn-sm" onclick="switchTab('order')">
+                ➕ Order Baru
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="openServicesModal()">
+                ⚙️ Kelola Produk & Jasa
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="loadAllOrders()">
+                🔄 Refresh Data
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="openImportModal()">
+                📥 Import Data Lama
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="logoutAdmin()" title="Kunci Akses Kasir">
+                🔒 Kunci Kasir
+              </button>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="text" id="admin-search-input" placeholder="Cari pelanggan / resi..." oninput="filterAdminOrders()" style="padding: 7px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 0.88rem;">
+              <select id="admin-status-filter" onchange="filterAdminOrders()" style="padding: 7px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 0.88rem;">
+                <option value="ALL">Semua Status</option>
+                <option value="Diterima">Diterima</option>
+                <option value="Dicuci">Dicuci</option>
+                <option value="Dikeringkan">Dikeringkan</option>
+                <option value="Disetrika">Disetrika</option>
+                <option value="Siap Diambil">Siap Diambil</option>
+                <option value="Selesai">Selesai</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Orders Table -->
+        <div class="card">
+          <h3 class="card-title" style="margin-bottom: 15px;">Daftar Transaksi Antrean Laundry (Sandbox)</h3>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>No. Resi</th>
+                  <th>Tanggal</th>
+                  <th>Pelanggan</th>
+                  <th>Layanan & Qty</th>
+                  <th>Total</th>
+                  <th>Pembayaran</th>
+                  <th>Status Pengerjaan</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="admin-orders-tbody">
+                <tr>
+                  <td colspan="8" style="text-align: center; padding: 25px;">Memuat data transaksi...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VIEW 2: REKAP BULANAN & ANALISIS PENJUALAN -->
+      <div id="admin-sub-recap" style="display: none;">
+        <!-- Filter Periode Bulan & Tahun -->
+        <div class="card" style="padding: 18px 20px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--dark);">📅 Filter Periode Laporan</h3>
+              <p style="font-size: 0.85rem; color: var(--text-muted);">Pilih bulan dan tahun untuk melihat performa penjualan & tren laundry.</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <select id="recap-filter-month" onchange="renderMonthlyRecap()" style="padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border); font-weight: 600;">
+                <option value="ALL">Semua Bulan (Sepanjang Masa)</option>
+                <option value="01">Januari</option>
+                <option value="02">Februari</option>
+                <option value="03">Maret</option>
+                <option value="04">April</option>
+                <option value="05">Mei</option>
+                <option value="06">Juni</option>
+                <option value="07">Juli</option>
+                <option value="08">Agustus</option>
+                <option value="09">September</option>
+                <option value="10">Oktober</option>
+                <option value="11" selected>November</option>
+                <option value="12">Desember</option>
+              </select>
+              <select id="recap-filter-year" onchange="renderMonthlyRecap()" style="padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border); font-weight: 600;">
+                <!-- Diisi otomatis oleh JavaScript -->
+              </select>
+              <button class="btn btn-secondary btn-sm" onclick="downloadRecapCsv()" title="Unduh CSV">
+                📥 Download CSV
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI Cards Bulanan -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Omset Periode Ini</div>
+            <div id="recap-stat-omset" class="stat-value" style="color: var(--accent);">Rp 0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Transaksi</div>
+            <div id="recap-stat-count" class="stat-value">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Berat / Satuan</div>
+            <div id="recap-stat-qty" class="stat-value" style="color: var(--primary);">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Layanan Terfavorit</div>
+            <div id="recap-stat-fav" class="stat-value" style="font-size: 1.15rem; font-weight: 700; color: #b45309;">-</div>
+          </div>
+        </div>
+
+        <!-- Leaderboard: Layanan Paling Diminati -->
+        <div class="card" style="margin-bottom: 24px;">
+          <h3 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+            🏆 Layanan & Paket Paling Banyak Diminati Pelanggan
+          </h3>
+          <p class="card-subtitle">Urutan jasa berdasarkan frekuensi pemesanan dan kontribusi omset.</p>
+
+          <div id="recap-leaderboard-container" style="display: flex; flex-direction: column; gap: 14px; margin-top: 15px;">
+            <!-- Diisi secara dinamis oleh JavaScript -->
+          </div>
+        </div>
+
+        <!-- Tabel Rincian Data Rekap -->
+        <div class="card">
+          <h3 class="card-title" style="margin-bottom: 15px;">Rincian Penjualan per Layanan</h3>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Peringkat</th>
+                  <th>Nama Layanan</th>
+                  <th>Kategori</th>
+                  <th>Frekuensi Order</th>
+                  <th>Total Volume</th>
+                  <th>Total Pendapatan</th>
+                  <th>Kontribusi (%)</th>
+                </tr>
+              </thead>
+              <tbody id="recap-table-tbody">
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 25px;">Memuat rekap...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: KELOLA LAYANAN & PRODUK (ADMIN CRUD) -->
+  <div id="services-modal" class="modal-overlay">
+    <div class="modal-dialog" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.2rem; font-weight: 700;">⚙️ Manajemen Produk & Layanan (Demo)</h3>
+        <button class="modal-close" onclick="closeServicesModal()">&times;</button>
+      </div>
+
+      <!-- Form Tambah / Edit Layanan -->
+      <div style="background: var(--bg-page); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: 20px;">
+        <h4 id="service-form-title" style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: var(--primary);">
+          ➕ Tambah Layanan Baru
+        </h4>
+        <form id="service-form" onsubmit="handleSaveService(event)">
+          <input type="hidden" id="srv-id" value="">
+          <div class="form-grid" style="margin-bottom: 12px;">
+            <div class="form-group">
+              <label>Nama Layanan / Jasa *</label>
+              <input type="text" id="srv-nama" placeholder="Contoh: Cuci Karpet Tebal" required>
+            </div>
+            <div class="form-group">
+              <label>Kategori Jenis</label>
+              <select id="srv-jenis">
+                <option value="Kiloan">Kiloan</option>
+                <option value="Satuan">Satuan</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-grid" style="margin-bottom: 16px;">
+            <div class="form-group">
+              <label>Tarif / Harga (Rp) *</label>
+              <input type="number" id="srv-harga" placeholder="Contoh: 15000" min="500" required>
+            </div>
+            <div class="form-group">
+              <label>Satuan Unit *</label>
+              <input type="text" id="srv-satuan" placeholder="Contoh: Kg / Pcs / Pasang" required>
+            </div>
+            <div class="form-group">
+              <label>Estimasi (Hari)</label>
+              <input type="number" id="srv-estimasi" value="2" min="1">
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="submit" id="btn-save-service" class="btn btn-primary btn-sm">
+              💾 Simpan Layanan
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="resetServiceForm()">
+              Batal
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tabel Daftar Layanan -->
+      <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 10px;">Daftar Layanan Tersedia</h4>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nama Jasa</th>
+              <th>Jenis</th>
+              <th>Harga</th>
+              <th>Est.</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="services-modal-tbody">
+            <tr><td colspan="6" style="text-align: center;">Memuat...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: STRUK NOTA & CETAK PRINTER (THERMAL 58mm/80mm) -->
+  <div id="receipt-modal" class="modal-overlay">
+    <div class="modal-dialog" style="max-width: 420px; padding: 20px;">
+      <div class="modal-header no-print">
+        <h3 style="font-size: 1.1rem; font-weight: 700;">🧾 Struk Transaksi Laundry (Demo)</h3>
+        <button class="modal-close" onclick="closeReceiptModal()">&times;</button>
+      </div>
+
+      <!-- Template Struk Siap Cetak -->
+      <div id="printable-receipt-area" class="receipt-box">
+        <div class="receipt-header">
+          <h3>🧺 iLaundry</h3>
+          <p>Layanan Cuci Bersih & Higienis</p>
+          <p id="rcp-cs-phone">WA: 0812-3456-7890</p>
+        </div>
+
+        <div class="receipt-row">
+          <span>No. Resi:</span>
+          <strong id="rcp-id">-</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Tanggal:</span>
+          <span id="rcp-date">-</span>
+        </div>
+        <div class="receipt-row">
+          <span>Pelanggan:</span>
+          <span id="rcp-cust">-</span>
+        </div>
+        <div class="receipt-row">
+          <span>WhatsApp:</span>
+          <span id="rcp-wa">-</span>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <div class="receipt-row">
+          <span id="rcp-service">-</span>
+          <span id="rcp-qty">-</span>
+        </div>
+        <div class="receipt-row" style="color: #64748b; font-size: 0.72rem;">
+          <span id="rcp-notes">-</span>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <div class="receipt-total">
+          <span>TOTAL:</span>
+          <span id="rcp-total">Rp 0</span>
+        </div>
+        <div class="receipt-row" style="margin-top: 4px;">
+          <span>Status Bayar:</span>
+          <strong id="rcp-pay-status">-</strong>
+        </div>
+
+        <div class="receipt-qr">
+          <p>Scan untuk Lacak Cucian:</p>
+          <img id="rcp-qr-img" src="" alt="QR Resi">
+          <p id="rcp-direct-url" style="word-break: break-all; font-size: 0.65rem; color: #475569; margin-top: 2px;">-</p>
+          <p style="margin-top: 6px; font-size: 0.7rem;">Terima Kasih Atas Kepercayaan Anda! 🙏</p>
+        </div>
+      </div>
+
+      <!-- Tombol Aksi Kasir -->
+      <div class="no-print" style="margin-top: 18px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-primary" style="flex: 1;" onclick="printReceipt()">
+            🖨️ Cetak Struk (58mm)
+          </button>
+          <a id="rcp-btn-wa" href="#" target="_blank" class="btn btn-success" style="flex: 1; text-decoration: none;">
+            📲 Kirim ke WA
+          </a>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeReceiptModal()">
+          ✕ Selesai / Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LOGIN ADMIN / KASIR -->
+  <div id="login-modal" class="modal-overlay">
+    <div class="modal-dialog" style="max-width: 380px; padding: 24px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 800;">🔐 Login Petugas Kasir Demo</h3>
+        <button class="modal-close" onclick="closeLoginModal()">&times;</button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 18px;">
+        Gunakan kredensial demo untuk mencoba menu Order Baru dan Panel Kasir.
+      </p>
+
+      <form id="admin-login-form" onsubmit="handleLoginSubmit(event)">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label style="font-size: 0.85rem; font-weight: 700;">Username</label>
+          <input type="text" id="login-username" value="admin" placeholder="admin" required autofocus>
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label style="font-size: 0.85rem; font-weight: 700;">Password / PIN</label>
+          <input type="password" id="login-password" value="demo123" placeholder="demo123" required>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">
+            Masuk Kasir ➜
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="closeLoginModal()">
+            Batal
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: IMPORT & MIGRASI DATA LAMA -->
+  <div id="import-modal" class="modal-overlay">
+    <div class="modal-dialog" style="max-width: 580px; padding: 24px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+          📥 Migrasi Data Aplikasi Lama ke iLaundry (Simulasi)
+        </h3>
+        <button class="modal-close" onclick="closeImportModal()">&times;</button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+        Pindahkan riwayat transaksi, data pelanggan, dan catatan omset bulan-bulan lalu secara otomatis tanpa merusak data lama.
+      </p>
+
+      <!-- Pilihan Metode Import -->
+      <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+        <button id="tab-btn-sheet" class="btn btn-primary btn-sm" style="flex: 1;" onclick="switchImportMethod('sheet')">
+          📊 Dari Google Sheets / Excel (.xlsx)
+        </button>
+        <button id="tab-btn-csv" class="btn btn-secondary btn-sm" style="flex: 1;" onclick="switchImportMethod('csv')">
+          📄 Dari File CSV Langsung
+        </button>
+      </div>
+
+      <!-- METODE 1: VIA GOOGLE SHEETS / EXCEL UPLOAD -->
+      <div id="import-sheet-area">
+        <div style="background: var(--primary-soft); border: 1px dashed var(--primary); padding: 14px; border-radius: var(--radius-md); font-size: 0.82rem; margin-bottom: 16px;">
+          💡 <strong>Petunjuk untuk file Excel (.xlsx) / Spreadsheet:</strong><br>
+          1. Upload file Excel Anda ke Google Drive.<br>
+          2. Klik kanan ➔ <em>Buka dengan Google Spreadsheet</em>.<br>
+          3. Salin (Copy) link URL dari address bar browser, lalu tempel di bawah ini.
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label style="font-weight: 700; font-size: 0.88rem;">Link / URL Google Spreadsheet Lama *</label>
+          <input type="url" id="import-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/XXXXX/edit..." style="width: 100%;">
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="executeSpreadsheetMigration(true)">
+            🔍 Pindai Dulu (Dry-Run)
+          </button>
+          <button type="button" class="btn btn-primary" style="flex: 1;" onclick="executeSpreadsheetMigration(false)">
+            🚀 Mulai Migrasi Data
+          </button>
+        </div>
+      </div>
+
+      <!-- METODE 2: VIA CSV FILE -->
+      <div id="import-csv-area" style="display: none;">
+        <div style="background: #f8fafc; border: 1px dashed var(--border); padding: 14px; border-radius: var(--radius-md); font-size: 0.82rem; margin-bottom: 16px;">
+          💡 <strong>Pilih file .CSV dari komputer Anda:</strong><br>
+          Sistem otomatis mencocokkan kolom Tanggal, Nama, WhatsApp, Total Biaya, dll.
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label style="font-weight: 700; font-size: 0.88rem;">Pilih Berkas CSV (.csv)</label>
+          <input type="file" id="import-csv-file" accept=".csv" onchange="handleCsvFileSelected(event)" style="padding: 8px;">
+        </div>
+
+        <div id="csv-preview-info" style="font-size: 0.85rem; font-weight: 600; color: var(--primary); margin-bottom: 14px; display: none;"></div>
+
+        <button type="button" id="btn-run-csv-import" class="btn btn-primary" style="width: 100%; display: none;" onclick="executeCsvMigration()">
+          🚀 Impor Data CSV ke Database iLaundry
+        </button>
+      </div>
+
+      <!-- REPORT BOX -->
+      <div id="import-report-box" style="display: none; margin-top: 18px; padding: 14px; border-radius: var(--radius-md); font-size: 0.85rem; line-height: 1.4;"></div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- SCRIPTS -->
+  <script src="js/demo-app.js"></script>
+</body>
+</html>
