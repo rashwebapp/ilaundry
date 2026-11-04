@@ -110,9 +110,9 @@ function formatRupiah(number) {
 // ============================================
 
 function switchTab(tabId) {
-  // Cegah akses langsung ke tab admin tanpa otentikasi PIN
-  if (tabId === 'admin' && !isAdminAuthenticated()) {
-    openPinModal();
+  // Hanya izinkan tab 'order' dan 'admin' jika kasir sudah login
+  if ((tabId === 'admin' || tabId === 'order') && !isCashierLoggedIn()) {
+    openLoginModal();
     return;
   }
 
@@ -139,6 +139,7 @@ function switchTab(tabId) {
 // ============================================
 
 async function initApp() {
+  updateAuthUI();
   showLoading(true, 'Memuat layanan dan data iLaundry...');
   const res = await fetchFromGAS('getData');
 
@@ -793,62 +794,96 @@ async function handleDeleteService(id) {
 }
 
 // ============================================
-// OTENTIKASI & KEAMANAN PANEL KASIR (PIN)
+// OTENTIKASI & KEAMANAN KASIR / ADMIN
 // ============================================
 
-function isAdminAuthenticated() {
-  return sessionStorage.getItem('ilaundry_admin_auth') === 'true';
+function isCashierLoggedIn() {
+  return sessionStorage.getItem('ilaundry_cashier_session') === 'true';
 }
 
-function requestAdminAccess() {
-  if (isAdminAuthenticated()) {
-    switchTab('admin');
-  } else {
-    openPinModal();
+function updateAuthUI() {
+  const isLogged = isCashierLoggedIn();
+  const navOrder = document.getElementById('nav-item-order');
+  const navAdmin = document.getElementById('nav-item-admin');
+  const authContainer = document.getElementById('nav-auth-container');
+
+  if (navOrder) navOrder.style.display = isLogged ? 'block' : 'none';
+  if (navAdmin) navAdmin.style.display = isLogged ? 'block' : 'none';
+
+  if (authContainer) {
+    if (isLogged) {
+      authContainer.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge badge-success" style="font-size: 0.72rem;">👤 Kasir Aktif</span>
+          <button class="btn btn-danger btn-sm" onclick="handleLogout()" title="Kunci dan Keluar Kasir">
+            🚪 Logout
+          </button>
+        </div>
+      `;
+    } else {
+      authContainer.innerHTML = `
+        <button id="btn-login-trigger" class="btn btn-secondary btn-sm" onclick="openLoginModal()" style="font-weight: 700;">
+          🔑 Login Kasir
+        </button>
+      `;
+    }
+  }
+
+  // Jika sedang tidak login dan berada di tab kasir/order, kembalikan ke tracking
+  if (!isLogged && (state.currentTab === 'admin' || state.currentTab === 'order')) {
+    switchTab('tracking');
   }
 }
 
-function openPinModal() {
-  const modal = document.getElementById('pin-modal');
-  const input = document.getElementById('pin-input');
+function openLoginModal() {
+  const modal = document.getElementById('login-modal');
+  const user = document.getElementById('login-username');
+  const pass = document.getElementById('login-password');
   if (modal) {
     modal.classList.add('show');
-    if (input) {
-      input.value = '';
-      setTimeout(() => input.focus(), 150);
+    if (user) user.value = CONFIG.ADMIN_USER || 'admin';
+    if (pass) {
+      pass.value = '';
+      setTimeout(() => pass.focus(), 150);
     }
   }
 }
 
-function closePinModal() {
-  const modal = document.getElementById('pin-modal');
+function closeLoginModal() {
+  const modal = document.getElementById('login-modal');
   if (modal) modal.classList.remove('show');
 }
 
-function handlePinSubmit(e) {
+function handleLoginSubmit(e) {
   e.preventDefault();
-  const inputPin = document.getElementById('pin-input').value.trim();
-  const correctPin = String(CONFIG.ADMIN_PIN || '1234').trim();
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value.trim();
 
-  if (inputPin === correctPin) {
-    sessionStorage.setItem('ilaundry_admin_auth', 'true');
-    closePinModal();
-    showToast('Akses kasir berhasil dibuka.', 'success');
+  const validUser = String(CONFIG.ADMIN_USER || 'admin').trim();
+  const validPass = String(CONFIG.ADMIN_PASS || '1234').trim();
+
+  if (username === validUser && password === validPass) {
+    sessionStorage.setItem('ilaundry_cashier_session', 'true');
+    closeLoginModal();
+    updateAuthUI();
+    showToast('Login berhasil! Semua menu kasir telah dibuka.', 'success');
     switchTab('admin');
   } else {
-    showToast('PIN Kasir salah! Akses ditolak.', 'error');
-    const input = document.getElementById('pin-input');
-    if (input) {
-      input.value = '';
-      input.focus();
+    showToast('Username atau Password / PIN salah!', 'error');
+    const passInput = document.getElementById('login-password');
+    if (passInput) {
+      passInput.value = '';
+      passInput.focus();
     }
   }
 }
 
-function logoutAdmin() {
-  sessionStorage.removeItem('ilaundry_admin_auth');
-  showToast('Panel Kasir berhasil dikunci.', 'info');
-  switchTab('tracking');
+function handleLogout() {
+  if (confirm('Apakah Anda yakin ingin logout dan mengunci aplikasi?')) {
+    sessionStorage.removeItem('ilaundry_cashier_session');
+    updateAuthUI();
+    showToast('Kasir berhasil logout. Aplikasi dikunci untuk publik.', 'info');
+  }
 }
 
 // ============================================
@@ -859,11 +894,13 @@ function checkUrlParams() {
   const urlParams = new URLSearchParams(window.location.search);
   const resi = urlParams.get('resi');
   if (resi) {
-    // Mode Khusus Pelanggan: Sembunyikan menu Kasir dan Order Baru dari navbar
-    const navAdmin = document.getElementById('nav-item-admin');
-    const navOrder = document.getElementById('nav-item-order');
-    if (navAdmin) navAdmin.style.display = 'none';
-    if (navOrder) navOrder.style.display = 'none';
+    // Mode Khusus Pelanggan: pastikan menu kasir tidak tampil jika bukan kasir yang login
+    if (!isCashierLoggedIn()) {
+      const navOrder = document.getElementById('nav-item-order');
+      const navAdmin = document.getElementById('nav-item-admin');
+      if (navOrder) navOrder.style.display = 'none';
+      if (navAdmin) navAdmin.style.display = 'none';
+    }
 
     switchTab('tracking');
     const input = document.getElementById('track-input');

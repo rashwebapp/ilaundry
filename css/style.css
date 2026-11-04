@@ -804,28 +804,59 @@ body {
 }
 
 @media print {
-  body {
+  @page {
+    margin: 0;
+    size: 58mm auto;
+  }
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
     background: #ffffff !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
   }
-  body * {
-    visibility: hidden;
+  /* Sembunyikan semua elemen interface selain struk */
+  .navbar, .hero-section, main, .toast-container, .loading-overlay, #services-modal, #pin-modal, #login-modal, .no-print {
+    display: none !important;
   }
-  #printable-receipt-area, #printable-receipt-area * {
-    visibility: visible;
+  /* Tampilkan modal struk secara flat */
+  #receipt-modal {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    backdrop-filter: none !important;
+    overflow: visible !important;
+  }
+  #receipt-modal .modal-dialog {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    max-width: 58mm !important;
+    width: 58mm !important;
+    background: transparent !important;
+    overflow: visible !important;
   }
   #printable-receipt-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 58mm;
-    margin: 0;
-    padding: 2mm;
-    font-size: 10.5px;
-    background: #ffffff;
-    box-shadow: none;
-    border: none;
+    display: block !important;
+    width: 58mm !important;
+    max-width: 58mm !important;
+    margin: 0 auto !important;
+    padding: 4px !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    color: #000000 !important;
   }
-  .no-print {
-    display: none !important;
+  #printable-receipt-area * {
+    visibility: visible !important;
+    color: #000000 !important;
   }
 }
