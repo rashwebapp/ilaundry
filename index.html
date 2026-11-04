@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iLaundry — Sistem Manajemen & Tracking Laundry Modern</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="#" class="brand" onclick="switchTab('tracking'); return false;">
+        <div class="brand-icon">🧺</div>
+        <span>iLaundry</span>
+      </a>
+      <ul class="nav-links">
+        <li class="nav-item">
+          <button id="nav-tracking" class="active" onclick="switchTab('tracking')">
+            🔍 Lacak Cucian
+          </button>
+        </li>
+        <li class="nav-item">
+          <button id="nav-catalog" onclick="switchTab('catalog')">
+            📋 Katalog & Tarif
+          </button>
+        </li>
+        <li class="nav-item">
+          <button id="nav-order" onclick="switchTab('order')">
+            ➕ Order Baru
+          </button>
+        </li>
+        <li class="nav-item">
+          <button id="nav-admin" onclick="switchTab('admin')">
+            ⚙️ Panel Kasir
+          </button>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <header class="hero-section">
+    <div class="container">
+      <h1 class="hero-title">Cucian Bersih, Rapi & Higienis</h1>
+      <p class="hero-subtitle">Pantau progres laundry Anda secara real-time kapan saja dari kenyamanan genggaman Anda.</p>
+      
+      <!-- HERO QUICK SEARCH -->
+      <form id="hero-search-form" class="search-box-card" onsubmit="handleTrackSearch(event)">
+        <input type="text" id="track-input" placeholder="Ketik No. Resi (contoh: IL-2411-001) atau No. WhatsApp..." required>
+        <button type="submit" id="btn-hero-search">
+          <span>Lacak Sekarang</span> ➜
+        </button>
+      </form>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="container">
+
+    <!-- VIEW 1: TRACKING RESI -->
+    <section id="view-tracking" class="view-section active">
+      <div id="tracking-result-area">
+        <!-- Default State: Promo / Edukasi Alur -->
+        <div class="card" style="text-align: center; padding: 40px 20px;">
+          <div style="font-size: 3rem; margin-bottom: 12px;">✨</div>
+          <h2 class="card-title">Cek Status Pengerjaan Laundry</h2>
+          <p class="card-subtitle" style="max-width: 500px; margin: 0 auto 20px;">
+            Masukkan nomor resi yang tercetak pada struk nota atau nomor WhatsApp yang Anda daftarkan saat menitipkan cucian pada form pencarian di atas.
+          </p>
+          <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+            <span class="badge badge-primary">Diterima</span> ➔
+            <span class="badge badge-primary">Dicuci</span> ➔
+            <span class="badge badge-primary">Dikeringkan</span> ➔
+            <span class="badge badge-primary">Disetrika</span> ➔
+            <span class="badge badge-success">Siap Diambil</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: KATALOG LAYANAN & SIMULATOR BIAYA -->
+    <section id="view-catalog" class="view-section">
+      <div class="card">
+        <h2 class="card-title">Katalog Layanan & Estimasi Biaya</h2>
+        <p class="card-subtitle">Daftar harga transparan tanpa biaya tersembunyi. Gunakan simulator untuk menghitung perkiraan total tagihan Anda.</p>
+        
+        <!-- Calculator Box -->
+        <div style="background: var(--primary-soft); padding: 18px; border-radius: var(--radius-md); border: 1px dashed var(--primary); margin-bottom: 24px;">
+          <h3 style="font-size: 1rem; color: var(--primary); font-weight: 700; margin-bottom: 12px;">🧮 Simulator Hitung Cepat</h3>
+          <div class="form-grid" style="margin-bottom: 0;">
+            <div class="form-group">
+              <label>Pilih Layanan</label>
+              <select id="sim-layanan" onchange="calculateSimulation()"></select>
+            </div>
+            <div class="form-group">
+              <label>Jumlah / Berat (<span id="sim-unit-label">Kg</span>)</label>
+              <input type="number" id="sim-qty" value="3" min="0.5" step="0.5" oninput="calculateSimulation()">
+            </div>
+            <div class="form-group" style="justify-content: flex-end;">
+              <div style="font-size: 0.85rem; color: var(--text-muted);">Estimasi Total:</div>
+              <div id="sim-total" style="font-size: 1.45rem; font-weight: 800; color: var(--primary);">Rp 0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Catalog Grid -->
+        <div id="catalog-container" class="catalog-grid">
+          <div style="text-align: center; grid-column: 1/-1; padding: 30px;">Memuat katalog harga...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: FORM ORDER BARU -->
+    <section id="view-order" class="view-section">
+      <div class="card" style="max-width: 680px; margin: 0 auto;">
+        <h2 class="card-title">📝 Buat Pesanan Baru</h2>
+        <p class="card-subtitle">Formulir pendaftaran cucian baru untuk pelanggan maupun kasir.</p>
+
+        <form id="order-form" onsubmit="handleCreateOrder(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="order-nama">Nama Lengkap Pelanggan *</label>
+              <input type="text" id="order-nama" placeholder="Contoh: Budi Santoso" required>
+            </div>
+            <div class="form-group">
+              <label for="order-wa">No. WhatsApp Aktif *</label>
+              <input type="tel" id="order-wa" placeholder="Contoh: 081234567890" required>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="order-layanan">Pilih Paket Layanan *</label>
+              <select id="order-layanan" onchange="handleOrderServiceChange()" required>
+                <option value="">-- Pilih Layanan --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="order-qty">Jumlah / Berat (<span id="order-unit-label">Kg</span>) *</label>
+              <input type="number" id="order-qty" value="1" min="0.1" step="0.1" oninput="calculateOrderTotal()" required>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label for="order-catatan">Catatan Khusus (Opsional)</label>
+            <textarea id="order-catatan" rows="2" placeholder="Contoh: Pakaian luntur harap dipisah, detergen hypoallergenic, dll."></textarea>
+          </div>
+
+          <!-- Total Ringkasan Box -->
+          <div style="background: #f8fafc; border: 1px solid var(--border); padding: 16px; border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div>
+              <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">TOTAL ESTIMASI BIAYA</div>
+              <div id="order-total-preview" style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">Rp 0</div>
+            </div>
+            <span class="badge badge-warning">Bayar saat selesai / serah terima</span>
+          </div>
+
+          <button type="submit" id="btn-submit-order" class="btn btn-primary" style="width: 100%;">
+            💾 Simpan Pesanan & Terbitkan Resi
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- VIEW 4: PANEL KASIR & KELOLA LAYANAN -->
+    <section id="view-admin" class="view-section">
+      <!-- Admin Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Pesanan</div>
+          <div id="stat-total" class="stat-value">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Sedang Diproses</div>
+          <div id="stat-active" class="stat-value" style="color: var(--primary);">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Siap Diambil</div>
+          <div id="stat-ready" class="stat-value" style="color: var(--accent);">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Omset</div>
+          <div id="stat-revenue" class="stat-value" style="font-size: 1.35rem;">Rp 0</div>
+        </div>
+      </div>
+
+      <!-- Action & Filter Bar -->
+      <div class="card" style="padding: 16px 20px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-sm" onclick="switchTab('order')">
+              ➕ Order Baru
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="openServicesModal()">
+              ⚙️ Kelola Produk & Jasa
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="loadAllOrders()">
+              🔄 Refresh Data
+            </button>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="admin-search-input" placeholder="Cari pelanggan / resi..." oninput="filterAdminOrders()" style="padding: 7px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 0.88rem;">
+            <select id="admin-status-filter" onchange="filterAdminOrders()" style="padding: 7px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 0.88rem;">
+              <option value="ALL">Semua Status</option>
+              <option value="Diterima">Diterima</option>
+              <option value="Dicuci">Dicuci</option>
+              <option value="Dikeringkan">Dikeringkan</option>
+              <option value="Disetrika">Disetrika</option>
+              <option value="Siap Diambil">Siap Diambil</option>
+              <option value="Selesai">Selesai</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Orders Table -->
+      <div class="card">
+        <h3 class="card-title" style="margin-bottom: 15px;">Daftar Transaksi Antrean Laundry</h3>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>No. Resi</th>
+                <th>Tanggal</th>
+                <th>Pelanggan</th>
+                <th>Layanan & Qty</th>
+                <th>Total</th>
+                <th>Pembayaran</th>
+                <th>Status Pengerjaan</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="admin-orders-tbody">
+              <tr>
+                <td colspan="8" style="text-align: center; padding: 25px;">Memuat data transaksi...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: KELOLA LAYANAN & PRODUK (ADMIN CRUD) -->
+  <div id="services-modal" class="modal-overlay">
+    <div class="modal-dialog" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.2rem; font-weight: 700;">⚙️ Manajemen Produk & Layanan</h3>
+        <button class="modal-close" onclick="closeServicesModal()">&times;</button>
+      </div>
+
+      <!-- Form Tambah / Edit Layanan -->
+      <div style="background: var(--bg-page); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: 20px;">
+        <h4 id="service-form-title" style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: var(--primary);">
+          ➕ Tambah Layanan Baru
+        </h4>
+        <form id="service-form" onsubmit="handleSaveService(event)">
+          <input type="hidden" id="srv-id" value="">
+          <div class="form-grid" style="margin-bottom: 12px;">
+            <div class="form-group">
+              <label>Nama Layanan / Jasa *</label>
+              <input type="text" id="srv-nama" placeholder="Contoh: Cuci Karpet Tebal" required>
+            </div>
+            <div class="form-group">
+              <label>Kategori Jenis</label>
+              <select id="srv-jenis">
+                <option value="Kiloan">Kiloan</option>
+                <option value="Satuan">Satuan</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-grid" style="margin-bottom: 16px;">
+            <div class="form-group">
+              <label>Tarif / Harga (Rp) *</label>
+              <input type="number" id="srv-harga" placeholder="Contoh: 15000" min="500" required>
+            </div>
+            <div class="form-group">
+              <label>Satuan Unit *</label>
+              <input type="text" id="srv-satuan" placeholder="Contoh: Kg / Pcs / Pasang" required>
+            </div>
+            <div class="form-group">
+              <label>Estimasi (Hari)</label>
+              <input type="number" id="srv-estimasi" value="2" min="1">
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="submit" id="btn-save-service" class="btn btn-primary btn-sm">
+              💾 Simpan Layanan
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="resetServiceForm()">
+              Batal
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tabel Daftar Layanan -->
+      <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 10px;">Daftar Layanan Tersedia</h4>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nama Jasa</th>
+              <th>Jenis</th>
+              <th>Harga</th>
+              <th>Est.</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="services-modal-tbody">
+            <tr><td colspan="6" style="text-align: center;">Memuat...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- GLOBAL LOADING OVERLAY -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <div id="loading-text" style="font-weight: 600; color: var(--dark); font-size: 0.95rem;">Menghubungkan ke server...</div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
