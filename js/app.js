@@ -1063,6 +1063,212 @@ async function executeCsvMigration() {
 }
 
 // ============================================
+// MODUL REKAP BULANAN & ANALISIS PENJUALAN
+// ============================================
+
+let currentAdminSubView = 'orders';
+
+function switchAdminSubView(subView) {
+  currentAdminSubView = subView;
+  const btnOrders = document.getElementById('sub-nav-orders');
+  const btnRecap = document.getElementById('sub-nav-recap');
+  const areaOrders = document.getElementById('admin-sub-orders');
+  const areaRecap = document.getElementById('admin-sub-recap');
+
+  if (subView === 'orders') {
+    if (btnOrders) btnOrders.className = 'btn btn-primary';
+    if (btnRecap) btnRecap.className = 'btn btn-secondary';
+    if (areaOrders) areaOrders.style.display = 'block';
+    if (areaRecap) areaRecap.style.display = 'none';
+  } else {
+    if (btnOrders) btnOrders.className = 'btn btn-secondary';
+    if (btnRecap) btnRecap.className = 'btn btn-primary';
+    if (areaOrders) areaOrders.style.display = 'none';
+    if (areaRecap) areaRecap.style.display = 'block';
+    populateRecapYearDropdown();
+    renderMonthlyRecap();
+  }
+}
+
+function populateRecapYearDropdown() {
+  const yearSelect = document.getElementById('recap-filter-year');
+  if (!yearSelect) return;
+
+  const currentYear = new Date().getFullYear();
+  const years = new Set([currentYear, currentYear - 1, currentYear - 2]);
+
+  state.orders.forEach(o => {
+    if (o.timestamp) {
+      const match = String(o.timestamp).match(/(\d{4})/);
+      if (match) years.add(Number(match[1]));
+    }
+  });
+
+  const sortedYears = Array.from(years).sort((a, b) => b - a);
+  yearSelect.innerHTML = sortedYears.map(y => `<option value="${y}" ${y === currentYear ? 'selected' : ''}>Tahun ${y}</option>`).join('');
+}
+
+function renderMonthlyRecap() {
+  const monthFilter = document.getElementById('recap-filter-month')?.value || 'ALL';
+  const yearFilter = document.getElementById('recap-filter-year')?.value || String(new Date().getFullYear());
+
+  const filteredOrders = state.orders.filter(o => {
+    const ts = String(o.timestamp || '');
+    if (!ts) return false;
+
+    let orderYear = '';
+    let orderMonth = '';
+
+    const ymdMatch = ts.match(/^(\d{4})-(\d{2})/);
+    const dmyMatch = ts.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+
+    if (ymdMatch) {
+      orderYear = ymdMatch[1];
+      orderMonth = ymdMatch[2];
+    } else if (dmyMatch) {
+      orderYear = dmyMatch[3];
+      orderMonth = dmyMatch[2];
+    } else {
+      orderYear = ts.slice(0, 4);
+    }
+
+    const matchYear = !yearFilter || orderYear === yearFilter;
+    const matchMonth = monthFilter === 'ALL' || orderMonth === monthFilter;
+
+    return matchYear && matchMonth;
+  });
+
+  let totalOmset = 0;
+  let totalQty = 0;
+  const totalCount = filteredOrders.length;
+  const serviceMap = {};
+
+  filteredOrders.forEach(o => {
+    const isLunas = o.status_bayar === 'Lunas';
+    const amount = Number(o.total_biaya) || 0;
+    const qty = Number(o.jumlah) || 1;
+    const srvName = (o.layanan || 'Lain-lain').trim();
+
+    if (isLunas) {
+      totalOmset += amount;
+    }
+    totalQty += qty;
+
+    if (!serviceMap[srvName]) {
+      const srvObj = state.services.find(s => s.nama_layanan.toLowerCase() === srvName.toLowerCase());
+      serviceMap[srvName] = {
+        name: srvName,
+        category: srvObj ? (srvObj.jenis || 'Kiloan') : (srvName.toLowerCase().includes('kilo') ? 'Kiloan' : 'Satuan'),
+        unit: srvObj ? srvObj.satuan : 'Kg',
+        count: 0,
+        volume: 0,
+        revenue: 0
+      };
+    }
+
+    serviceMap[srvName].count += 1;
+    serviceMap[srvName].volume += qty;
+    if (isLunas) {
+      serviceMap[srvName].revenue += amount;
+    }
+  });
+
+  const sortedServices = Object.values(serviceMap).sort((a, b) => b.revenue - a.revenue || b.count - a.count);
+
+  document.getElementById('recap-stat-omset').textContent = formatRupiah(totalOmset);
+  document.getElementById('recap-stat-count').textContent = totalCount;
+  document.getElementById('recap-stat-qty').textContent = `${totalQty.toFixed(1)} Unit/Kg`;
+  document.getElementById('recap-stat-fav').textContent = sortedServices.length > 0 ? sortedServices[0].name : '-';
+
+  const leaderboard = document.getElementById('recap-leaderboard-container');
+  if (leaderboard) {
+    if (sortedServices.length === 0) {
+      leaderboard.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">Tidak ada transaksi pada periode yang dipilih.</div>';
+    } else {
+      const maxRev = sortedServices[0].revenue || 1;
+      leaderboard.innerHTML = sortedServices.slice(0, 5).map((srv, idx) => {
+        const percent = totalOmset > 0 ? ((srv.revenue / totalOmset) * 100).toFixed(1) : 0;
+        const barWidth = Math.max(8, (srv.revenue / maxRev) * 100);
+        const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : 'rank-other';
+        const rankIcon = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+
+        return `
+          <div style="background: #f8fafc; padding: 14px 18px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="ranking-badge ${rankClass}">${rankIcon}</span>
+                <div>
+                  <strong style="font-size: 0.98rem; color: var(--dark);">${srv.name}</strong>
+                  <span class="badge ${srv.category === 'Kiloan' ? 'badge-primary' : 'badge-warning'}" style="margin-left: 6px; font-size: 0.7rem;">${srv.category}</span>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <strong style="color: var(--primary); font-size: 1.05rem;">${formatRupiah(srv.revenue)}</strong>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">(${srv.count}x order • ${srv.volume.toFixed(1)} ${srv.unit})</span>
+              </div>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width: ${barWidth}%;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+              <span>Pangsa Omset: <strong>${percent}%</strong></span>
+              <span>Rata-rata: ${srv.count > 0 ? formatRupiah(srv.revenue / srv.count) : 'Rp 0'} / order</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  const tbody = document.getElementById('recap-table-tbody');
+  if (tbody) {
+    if (sortedServices.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 25px;">Belum ada data penjualan pada periode ini.</td></tr>';
+    } else {
+      tbody.innerHTML = sortedServices.map((srv, idx) => {
+        const percent = totalOmset > 0 ? ((srv.revenue / totalOmset) * 100).toFixed(1) : 0;
+        return `
+          <tr>
+            <td><strong>#${idx + 1}</strong></td>
+            <td><strong>${srv.name}</strong></td>
+            <td><span class="badge ${srv.category === 'Kiloan' ? 'badge-primary' : 'badge-warning'}">${srv.category}</span></td>
+            <td>${srv.count} Kali Order</td>
+            <td>${srv.volume.toFixed(1)} ${srv.unit}</td>
+            <td><strong>${formatRupiah(srv.revenue)}</strong></td>
+            <td><strong style="color: var(--primary);">${percent}%</strong></td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+}
+
+function downloadRecapCsv() {
+  const monthFilter = document.getElementById('recap-filter-month')?.value || 'ALL';
+  const yearFilter = document.getElementById('recap-filter-year')?.value || 'ALL';
+
+  let csvContent = 'data:text/csv;charset=utf-8,';
+  csvContent += 'Peringkat,Nama Layanan,Kategori,Frekuensi Order,Total Volume,Total Pendapatan (Rp)\n';
+
+  const rows = document.querySelectorAll('#recap-table-tbody tr');
+  rows.forEach(row => {
+    const cols = row.querySelectorAll('td');
+    if (cols.length >= 6) {
+      const line = Array.from(cols).slice(0, 6).map(c => `"${c.innerText.replace(/"/g, '""')}"`).join(',');
+      csvContent += line + '\n';
+    }
+  });
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `Rekap_iLaundry_${yearFilter}_Bulan_${monthFilter}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+// ============================================
 // EVENT LISTENERS & BOOTSTRAP
 // ============================================
 

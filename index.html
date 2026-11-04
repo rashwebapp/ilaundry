@@ -176,84 +176,190 @@
 
     <!-- VIEW 4: PANEL KASIR & KELOLA LAYANAN -->
     <section id="view-admin" class="view-section">
-      <!-- Admin Stats Grid -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">Total Pesanan</div>
-          <div id="stat-total" class="stat-value">0</div>
+      <!-- Sub-Navigasi Panel Kasir -->
+      <div style="display: flex; gap: 8px; margin-bottom: 22px;">
+        <button id="sub-nav-orders" class="btn btn-primary" onclick="switchAdminSubView('orders')">
+          📋 Antrean Transaksi
+        </button>
+        <button id="sub-nav-recap" class="btn btn-secondary" onclick="switchAdminSubView('recap')">
+          📊 Rekap Bulanan & Layanan Terlaris
+        </button>
+      </div>
+
+      <!-- SUB-VIEW 1: ANTREAN TRANSAKSI -->
+      <div id="admin-sub-orders">
+        <!-- Admin Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Pesanan</div>
+            <div id="stat-total" class="stat-value">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Sedang Diproses</div>
+            <div id="stat-active" class="stat-value" style="color: var(--primary);">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Siap Diambil</div>
+            <div id="stat-ready" class="stat-value" style="color: var(--accent);">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Omset</div>
+            <div id="stat-revenue" class="stat-value" style="font-size: 1.35rem;">Rp 0</div>
+          </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-label">Sedang Diproses</div>
-          <div id="stat-active" class="stat-value" style="color: var(--primary);">0</div>
+
+        <!-- Action & Filter Bar -->
+        <div class="card" style="padding: 16px 20px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-primary btn-sm" onclick="switchTab('order')">
+                ➕ Order Baru
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="openServicesModal()">
+                ⚙️ Kelola Produk & Jasa
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="loadAllOrders()">
+                🔄 Refresh Data
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="openImportModal()">
+                📥 Import Data Lama
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="logoutAdmin()" title="Kunci Akses Kasir">
+                🔒 Kunci Kasir
+              </button>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="text" id="admin-search-input" placeholder="Cari pelanggan / resi..." oninput="filterAdminOrders()" style="padding: 7px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 0.88rem;">
+              <select id="admin-status-filter" onchange="filterAdminOrders()" style="padding: 7px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 0.88rem;">
+                <option value="ALL">Semua Status</option>
+                <option value="Diterima">Diterima</option>
+                <option value="Dicuci">Dicuci</option>
+                <option value="Dikeringkan">Dikeringkan</option>
+                <option value="Disetrika">Disetrika</option>
+                <option value="Siap Diambil">Siap Diambil</option>
+                <option value="Selesai">Selesai</option>
+              </select>
+            </div>
+          </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-label">Siap Diambil</div>
-          <div id="stat-ready" class="stat-value" style="color: var(--accent);">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Total Omset</div>
-          <div id="stat-revenue" class="stat-value" style="font-size: 1.35rem;">Rp 0</div>
+
+        <!-- Orders Table -->
+        <div class="card">
+          <h3 class="card-title" style="margin-bottom: 15px;">Daftar Transaksi Antrean Laundry</h3>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>No. Resi</th>
+                  <th>Tanggal</th>
+                  <th>Pelanggan</th>
+                  <th>Layanan & Qty</th>
+                  <th>Total</th>
+                  <th>Pembayaran</th>
+                  <th>Status Pengerjaan</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="admin-orders-tbody">
+                <tr>
+                  <td colspan="8" style="text-align: center; padding: 25px;">Memuat data transaksi...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <!-- Action & Filter Bar -->
-      <div class="card" style="padding: 16px 20px; margin-bottom: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button class="btn btn-primary btn-sm" onclick="switchTab('order')">
-              ➕ Order Baru
-            </button>
-            <button class="btn btn-secondary btn-sm" onclick="openServicesModal()">
-              ⚙️ Kelola Produk & Jasa
-            </button>
-            <button class="btn btn-secondary btn-sm" onclick="loadAllOrders()">
-              🔄 Refresh Data
-            </button>
-            <button class="btn btn-secondary btn-sm" onclick="openImportModal()">
-              📥 Import Data Lama
-            </button>
-            <button class="btn btn-secondary btn-sm" onclick="logoutAdmin()" title="Kunci Akses Kasir">
-              🔒 Kunci Kasir
-            </button>
-          </div>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <input type="text" id="admin-search-input" placeholder="Cari pelanggan / resi..." oninput="filterAdminOrders()" style="padding: 7px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 0.88rem;">
-            <select id="admin-status-filter" onchange="filterAdminOrders()" style="padding: 7px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 0.88rem;">
-              <option value="ALL">Semua Status</option>
-              <option value="Diterima">Diterima</option>
-              <option value="Dicuci">Dicuci</option>
-              <option value="Dikeringkan">Dikeringkan</option>
-              <option value="Disetrika">Disetrika</option>
-              <option value="Siap Diambil">Siap Diambil</option>
-              <option value="Selesai">Selesai</option>
-            </select>
+      <!-- SUB-VIEW 2: REKAP BULANAN & ANALISIS PENJUALAN -->
+      <div id="admin-sub-recap" style="display: none;">
+        <!-- Filter Periode Bulan & Tahun -->
+        <div class="card" style="padding: 18px 20px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--dark);">📅 Filter Periode Laporan</h3>
+              <p style="font-size: 0.85rem; color: var(--text-muted);">Pilih bulan dan tahun untuk melihat performa penjualan & tren laundry.</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <select id="recap-filter-month" onchange="renderMonthlyRecap()" style="padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border); font-weight: 600;">
+                <option value="ALL">Semua Bulan (Sepanjang Masa)</option>
+                <option value="01">Januari</option>
+                <option value="02">Februari</option>
+                <option value="03">Maret</option>
+                <option value="04">April</option>
+                <option value="05">Mei</option>
+                <option value="06">Juni</option>
+                <option value="07">Juli</option>
+                <option value="08">Agustus</option>
+                <option value="09">September</option>
+                <option value="10">Oktober</option>
+                <option value="11">November</option>
+                <option value="12">Desember</option>
+              </select>
+              <select id="recap-filter-year" onchange="renderMonthlyRecap()" style="padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border); font-weight: 600;">
+                <!-- Diisi otomatis oleh JavaScript -->
+              </select>
+              <button class="btn btn-secondary btn-sm" onclick="downloadRecapCsv()" title="Unduh CSV">
+                📥 Download CSV
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Orders Table -->
-      <div class="card">
-        <h3 class="card-title" style="margin-bottom: 15px;">Daftar Transaksi Antrean Laundry</h3>
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>No. Resi</th>
-                <th>Tanggal</th>
-                <th>Pelanggan</th>
-                <th>Layanan & Qty</th>
-                <th>Total</th>
-                <th>Pembayaran</th>
-                <th>Status Pengerjaan</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="admin-orders-tbody">
-              <tr>
-                <td colspan="8" style="text-align: center; padding: 25px;">Memuat data transaksi...</td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- KPI Cards Bulanan -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Omset Periode Ini</div>
+            <div id="recap-stat-omset" class="stat-value" style="color: var(--accent);">Rp 0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Transaksi</div>
+            <div id="recap-stat-count" class="stat-value">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Berat / Satuan</div>
+            <div id="recap-stat-qty" class="stat-value" style="color: var(--primary);">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Layanan Terfavorit</div>
+            <div id="recap-stat-fav" class="stat-value" style="font-size: 1.15rem; font-weight: 700; color: #b45309;">-</div>
+          </div>
+        </div>
+
+        <!-- Leaderboard: Layanan Paling Diminati -->
+        <div class="card" style="margin-bottom: 24px;">
+          <h3 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+            🏆 Layanan & Paket Paling Banyak Diminati Pelanggan
+          </h3>
+          <p class="card-subtitle">Urutan jasa berdasarkan frekuensi pemesanan dan kontribusi omset.</p>
+
+          <div id="recap-leaderboard-container" style="display: flex; flex-direction: column; gap: 14px; margin-top: 15px;">
+            <!-- Diisi secara dinamis oleh JavaScript -->
+          </div>
+        </div>
+
+        <!-- Tabel Rincian Data Rekap -->
+        <div class="card">
+          <h3 class="card-title" style="margin-bottom: 15px;">Rincian Penjualan per Layanan</h3>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Peringkat</th>
+                  <th>Nama Layanan</th>
+                  <th>Kategori</th>
+                  <th>Frekuensi Order</th>
+                  <th>Total Volume</th>
+                  <th>Total Pendapatan</th>
+                  <th>Kontribusi (%)</th>
+                </tr>
+              </thead>
+              <tbody id="recap-table-tbody">
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 25px;">Memuat rekap...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
