@@ -67,7 +67,24 @@ B. PANEL KASIR & OPERASIONAL (Terlindungi Sistem Login)
       - Tambah layanan baru, ubah harga/tarif, ganti satuan (Kg/Pcs/Pasang),
         atur estimasi hari kerja, atau nonaktifkan layanan lama.
 
-C. HALAMAN REKAP BULANAN & ANALISIS PENJUALAN (BARU)
+C. CATATAN PENJUALAN HARIAN (BARU)
+   1. Filter Tanggal Fleksibel:
+      - Kasir dapat memilih tanggal transaksi tertentu via date-picker.
+      - Tombol jalan pintas cepat: "Hari Ini" dan "Kemarin".
+   2. Metrik Finansial Harian Real-Time:
+      - Total Omset / Pendapatan kotor pada tanggal yang dipilih.
+      - Total Uang Masuk yang sudah lunas (Cash Inflow).
+      - Total Piutang / tagihan belum lunas yang harus ditagih.
+      - Total Nota / Transaksi dan volume bobot (Kg / Satuan) hari tersebut.
+   3. Tabel Rincian Transaksi per Jam/Waktu:
+      - No. Resi, Jam Masuk (WIB), Nama Pelanggan, Layanan & Bobot, Total Biaya.
+      - Tombol toggle instan status pembayaran (Lunas ➔ Belum Lunas).
+      - Tombol cetak ulang struk nota kasir thermal 58mm.
+      - Baris ringkasan akumulasi total di bagian bawah tabel.
+   4. Ekspor Data Harian:
+      - Tombol "Unduh CSV" untuk mengunduh rekap transaksi tanggal tersebut ke Excel.
+
+D. HALAMAN REKAP BULANAN & ANALISIS PENJUALAN (BARU)
    1. Filter Bulan Transaksi:
       - Kasir dapat memfilter rekapitulasi data berdasarkan bulan dan tahun.
    2. Metrik Ringkasan Finansial:

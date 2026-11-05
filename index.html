@@ -177,9 +177,12 @@
     <!-- VIEW 4: PANEL KASIR & KELOLA LAYANAN -->
     <section id="view-admin" class="view-section">
       <!-- Sub-Navigasi Panel Kasir -->
-      <div style="display: flex; gap: 8px; margin-bottom: 22px;">
+      <div style="display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap;">
         <button id="sub-nav-orders" class="btn btn-primary" onclick="switchAdminSubView('orders')">
           📋 Antrean Transaksi
+        </button>
+        <button id="sub-nav-daily" class="btn btn-secondary" onclick="switchAdminSubView('daily')">
+          📅 Penjualan Harian
         </button>
         <button id="sub-nav-recap" class="btn btn-secondary" onclick="switchAdminSubView('recap')">
           📊 Rekap Bulanan & Layanan Terlaris
@@ -270,7 +273,78 @@
         </div>
       </div>
 
-      <!-- SUB-VIEW 2: REKAP BULANAN & ANALISIS PENJUALAN -->
+      <!-- SUB-VIEW 2: CATATAN PENJUALAN HARIAN -->
+      <div id="admin-sub-daily" style="display: none;">
+        <!-- Filter Tanggal Harian -->
+        <div class="card" style="padding: 18px 20px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--dark);">📅 Catatan Penjualan Harian</h3>
+              <p style="font-size: 0.85rem; color: var(--text-muted);">Pilih tanggal transaksi untuk melihat omset harian, uang masuk (lunas), piutang, dan rincian nota.</p>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <input type="date" id="daily-filter-date" onchange="renderDailySales()" style="padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border); font-weight: 700; color: var(--dark); background: #fff;">
+              <button class="btn btn-secondary btn-sm" onclick="setDailyDateFilter('today')">Hari Ini</button>
+              <button class="btn btn-secondary btn-sm" onclick="setDailyDateFilter('yesterday')">Kemarin</button>
+              <button class="btn btn-secondary btn-sm" onclick="downloadDailyCsv()" title="Unduh CSV Penjualan Harian">📥 Unduh CSV</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI Cards Harian -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Omset Tanggal Ini</div>
+            <div id="daily-stat-omset" class="stat-value" style="color: var(--primary);">Rp 0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Uang Masuk (Lunas)</div>
+            <div id="daily-stat-paid" class="stat-value" style="color: var(--accent);">Rp 0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Piutang (Belum Lunas)</div>
+            <div id="daily-stat-unpaid" class="stat-value" style="color: var(--warning);">Rp 0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Jumlah Nota / Berat</div>
+            <div id="daily-stat-count-qty" class="stat-value" style="font-size: 1.25rem;">0 Nota</div>
+          </div>
+        </div>
+
+        <!-- Tabel Transaksi Harian Sesuai Tanggal -->
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <h3 class="card-title" id="daily-table-title">Daftar Transaksi Tanggal Ini</h3>
+            <span id="daily-badge-date" class="badge badge-primary" style="font-size: 0.88rem; padding: 6px 12px;">-</span>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>No. Resi</th>
+                  <th>Jam / Waktu</th>
+                  <th>Pelanggan</th>
+                  <th>Layanan & Qty</th>
+                  <th>Total Biaya</th>
+                  <th>Status Pembayaran</th>
+                  <th>Status Cucian</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="daily-orders-tbody">
+                <tr>
+                  <td colspan="8" style="text-align: center; padding: 25px;">Pilih tanggal untuk melihat transaksi...</td>
+                </tr>
+              </tbody>
+              <tfoot id="daily-orders-tfoot" style="background: #f8fafc; font-weight: 700; border-top: 2px solid var(--border);">
+                <!-- Ringkasan total penjualan harian -->
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VIEW 3: REKAP BULANAN & ANALISIS PENJUALAN -->
       <div id="admin-sub-recap" style="display: none;">
         <!-- Filter Periode Bulan & Tahun -->
         <div class="card" style="padding: 18px 20px; margin-bottom: 20px;">

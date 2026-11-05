@@ -454,6 +454,8 @@ async function loadAllOrders() {
   if (res.success && res.data) {
     state.orders = res.data;
     renderAdminOrdersTable(state.orders);
+    if (currentAdminSubView === 'daily') renderDailySales();
+    if (currentAdminSubView === 'recap') renderMonthlyRecap();
 
     // Refresh ringkasan stats
     const totalOrders = state.orders.length;
@@ -555,10 +557,15 @@ async function handleUpdateStatus(id_pesanan, status_cucian = null, status_bayar
       if (status_cucian) target.status_cucian = status_cucian;
       if (status_bayar) target.status_bayar = status_bayar;
       filterAdminOrders();
+      if (currentAdminSubView === 'daily') renderDailySales();
     }
   } else {
     showToast(res.message || 'Gagal update status.', 'error');
   }
+}
+
+async function handleQuickPaymentToggle(id_pesanan, newPayment) {
+  await handleUpdateStatus(id_pesanan, null, newPayment);
 }
 
 function formatIndonesianPhone(phone) {
@@ -1071,23 +1078,285 @@ let currentAdminSubView = 'orders';
 function switchAdminSubView(subView) {
   currentAdminSubView = subView;
   const btnOrders = document.getElementById('sub-nav-orders');
+  const btnDaily = document.getElementById('sub-nav-daily');
   const btnRecap = document.getElementById('sub-nav-recap');
+  
   const areaOrders = document.getElementById('admin-sub-orders');
+  const areaDaily = document.getElementById('admin-sub-daily');
   const areaRecap = document.getElementById('admin-sub-recap');
+
+  if (btnOrders) btnOrders.className = 'btn btn-secondary';
+  if (btnDaily) btnDaily.className = 'btn btn-secondary';
+  if (btnRecap) btnRecap.className = 'btn btn-secondary';
+
+  if (areaOrders) areaOrders.style.display = 'none';
+  if (areaDaily) areaDaily.style.display = 'none';
+  if (areaRecap) areaRecap.style.display = 'none';
 
   if (subView === 'orders') {
     if (btnOrders) btnOrders.className = 'btn btn-primary';
-    if (btnRecap) btnRecap.className = 'btn btn-secondary';
     if (areaOrders) areaOrders.style.display = 'block';
-    if (areaRecap) areaRecap.style.display = 'none';
-  } else {
-    if (btnOrders) btnOrders.className = 'btn btn-secondary';
+  } else if (subView === 'daily') {
+    if (btnDaily) btnDaily.className = 'btn btn-primary';
+    if (areaDaily) areaDaily.style.display = 'block';
+    initDailyDatePicker();
+    renderDailySales();
+  } else if (subView === 'recap') {
     if (btnRecap) btnRecap.className = 'btn btn-primary';
-    if (areaOrders) areaOrders.style.display = 'none';
     if (areaRecap) areaRecap.style.display = 'block';
     populateRecapYearDropdown();
     renderMonthlyRecap();
   }
+}
+
+// ============================================
+// CATATAN PENJUALAN HARIAN (DAILY SALES LOG)
+// ============================================
+
+function extractOrderDate(timestampStr) {
+  if (!timestampStr) return '';
+  const s = String(timestampStr).trim();
+
+  // Pattern 1: YYYY-MM-DD
+  const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (ymd) return `${ymd[1]}-${ymd[2]}-${ymd[3]}`;
+
+  // Pattern 2: DD/MM/YYYY
+  const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (dmy) {
+    const dd = ('0' + dmy[1]).slice(-2);
+    const mm = ('0' + dmy[2]).slice(-2);
+    return `${dmy[3]}-${mm}-${dd}`;
+  }
+
+  // Fallback via Date parser
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    const y = d.getFullYear();
+    const m = ('0' + (d.getMonth() + 1)).slice(-2);
+    const day = ('0' + d.getDate()).slice(-2);
+    return `${y}-${m}-${day}`;
+  }
+
+  return '';
+}
+
+function extractOrderTime(timestampStr) {
+  if (!timestampStr) return '-';
+  const s = String(timestampStr).trim();
+
+  const timeMatch = s.match(/(\d{2}:\d{2})(?::\d{2})?/);
+  if (timeMatch) return `${timeMatch[1]} WIB`;
+
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    const h = ('0' + d.getHours()).slice(-2);
+    const m = ('0' + d.getMinutes()).slice(-2);
+    return `${h}:${m} WIB`;
+  }
+  return '-';
+}
+
+function getLocalDateString(dateObj) {
+  const y = dateObj.getFullYear();
+  const m = ('0' + (dateObj.getMonth() + 1)).slice(-2);
+  const d = ('0' + dateObj.getDate()).slice(-2);
+  return `${y}-${m}-${d}`;
+}
+
+function initDailyDatePicker() {
+  const dateInput = document.getElementById('daily-filter-date');
+  if (!dateInput) return;
+  if (!dateInput.value) {
+    if (state.orders.length > 0 && state.orders[0].timestamp) {
+      const latestDate = extractOrderDate(state.orders[0].timestamp);
+      dateInput.value = latestDate || getLocalDateString(new Date());
+    } else {
+      dateInput.value = getLocalDateString(new Date());
+    }
+  }
+}
+
+function setDailyDateFilter(type) {
+  const dateInput = document.getElementById('daily-filter-date');
+  if (!dateInput) return;
+
+  const now = new Date();
+  if (type === 'today') {
+    dateInput.value = getLocalDateString(now);
+  } else if (type === 'yesterday') {
+    const yesterday = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+    dateInput.value = getLocalDateString(yesterday);
+  }
+  renderDailySales();
+}
+
+function renderDailySales() {
+  const dateInput = document.getElementById('daily-filter-date');
+  if (!dateInput) return;
+
+  let targetDate = dateInput.value;
+  if (!targetDate) {
+    targetDate = getLocalDateString(new Date());
+    dateInput.value = targetDate;
+  }
+
+  const badgeDate = document.getElementById('daily-badge-date');
+  const tableTitle = document.getElementById('daily-table-title');
+
+  const parts = targetDate.split('-');
+  let readableDate = targetDate;
+  if (parts.length === 3) {
+    const dObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    if (!isNaN(dObj.getTime())) {
+      readableDate = dObj.toLocaleDateString('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+  }
+
+  if (badgeDate) badgeDate.textContent = readableDate;
+  if (tableTitle) tableTitle.textContent = `Daftar Penjualan: ${readableDate}`;
+
+  const dailyOrders = state.orders.filter(o => extractOrderDate(o.timestamp) === targetDate);
+
+  let totalOmset = 0;
+  let totalPaid = 0;
+  let totalUnpaid = 0;
+  let totalQty = 0;
+
+  dailyOrders.forEach(o => {
+    const amount = Number(o.total_biaya) || 0;
+    const qty = Number(o.jumlah) || 1;
+    totalOmset += amount;
+    totalQty += qty;
+
+    const isLunas = String(o.status_bayar || '').toLowerCase() === 'lunas';
+    if (isLunas) {
+      totalPaid += amount;
+    } else {
+      totalUnpaid += amount;
+    }
+  });
+
+  const omsetEl = document.getElementById('daily-stat-omset');
+  const paidEl = document.getElementById('daily-stat-paid');
+  const unpaidEl = document.getElementById('daily-stat-unpaid');
+  const countQtyEl = document.getElementById('daily-stat-count-qty');
+
+  if (omsetEl) omsetEl.textContent = formatRupiah(totalOmset);
+  if (paidEl) paidEl.textContent = formatRupiah(totalPaid);
+  if (unpaidEl) unpaidEl.textContent = formatRupiah(totalUnpaid);
+  if (countQtyEl) countQtyEl.textContent = `${dailyOrders.length} Nota (${totalQty.toFixed(1)} Satuan)`;
+
+  const tbody = document.getElementById('daily-orders-tbody');
+  const tfoot = document.getElementById('daily-orders-tfoot');
+
+  if (tbody) {
+    if (dailyOrders.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align: center; padding: 35px 20px;">
+            <div style="font-size: 2.2rem; margin-bottom: 8px;">📭</div>
+            <div style="font-weight: 700; color: var(--dark); font-size: 1rem;">Tidak Ada Transaksi pada ${readableDate}</div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+              Silakan pilih tanggal lain di atas atau buat pesanan baru di menu Order Baru.
+            </p>
+          </td>
+        </tr>
+      `;
+      if (tfoot) tfoot.innerHTML = '';
+      return;
+    }
+
+    let rowsHtml = '';
+    dailyOrders.forEach(o => {
+      const isLunas = String(o.status_bayar || '').toLowerCase() === 'lunas';
+      const timeStr = extractOrderTime(o.timestamp);
+
+      rowsHtml += `
+        <tr>
+          <td><strong>${o.id_pesanan}</strong></td>
+          <td style="font-size: 0.85rem; white-space: nowrap;">
+            <span style="background: var(--bg-page); padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border); font-weight: 600;">
+              ⏰ ${timeStr}
+            </span>
+          </td>
+          <td>
+            <div style="font-weight: 700;">${o.nama_pelanggan}</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">${o.no_whatsapp || '-'}</div>
+          </td>
+          <td>
+            <div>${o.layanan}</div>
+            <small style="color: var(--text-muted);">${o.jumlah}</small>
+          </td>
+          <td style="font-weight: 700; color: var(--primary);">${formatRupiah(o.total_biaya)}</td>
+          <td>
+            <button class="badge ${isLunas ? 'badge-success' : 'badge-danger'}" 
+                    style="cursor: pointer; border: none;"
+                    onclick="handleQuickPaymentToggle('${o.id_pesanan}', '${isLunas ? 'Belum Lunas' : 'Lunas'}')"
+                    title="Klik untuk ubah status pembayaran">
+              ${o.status_bayar || 'Belum Lunas'} 🔄
+            </button>
+          </td>
+          <td>
+            <span class="badge badge-primary">${o.status_cucian}</span>
+          </td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="openReceiptModalByResi('${o.id_pesanan}')" title="Cetak Struk 58mm">
+              🖨️ Struk
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = rowsHtml;
+
+    if (tfoot) {
+      tfoot.innerHTML = `
+        <tr>
+          <td colspan="4" style="padding: 14px 16px; text-align: right; font-weight: 800; font-size: 0.95rem;">
+            TOTAL OMSET (${dailyOrders.length} Nota):
+          </td>
+          <td style="padding: 14px 16px; color: var(--primary); font-size: 1.15rem; font-weight: 800;">
+            ${formatRupiah(totalOmset)}
+          </td>
+          <td colspan="3" style="padding: 14px 16px; font-size: 0.88rem;">
+            <span style="color: var(--accent); font-weight: 700;">Lunas: ${formatRupiah(totalPaid)}</span> • 
+            <span style="color: var(--warning); font-weight: 700;">Piutang: ${formatRupiah(totalUnpaid)}</span>
+          </td>
+        </tr>
+      `;
+    }
+  }
+}
+
+function downloadDailyCsv() {
+  const dateInput = document.getElementById('daily-filter-date');
+  const targetDate = dateInput ? dateInput.value : '';
+  const dailyOrders = state.orders.filter(o => extractOrderDate(o.timestamp) === targetDate);
+
+  if (dailyOrders.length === 0) {
+    showToast('Tidak ada data transaksi pada tanggal ini untuk diunduh.', 'warning');
+    return;
+  }
+
+  let csv = 'data:text/csv;charset=utf-8,No Resi,Waktu,Pelanggan,WhatsApp,Layanan,Jumlah,Total Biaya,Status Bayar,Status Cucian,Catatan\n';
+  dailyOrders.forEach(o => {
+    csv += `"${o.id_pesanan}","${o.timestamp}","${o.nama_pelanggan}","${o.no_whatsapp}","${o.layanan}","${o.jumlah}","${o.total_biaya}","${o.status_bayar}","${o.status_cucian}","${o.catatan || ''}"\n`;
+  });
+
+  const encoded = encodeURI(csv);
+  const link = document.createElement('a');
+  link.setAttribute('href', encoded);
+  link.setAttribute('download', `penjualan-harian-${targetDate}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast(`📥 Berkas CSV Penjualan Harian (${targetDate}) berhasil diunduh!`, 'success');
 }
 
 function populateRecapYearDropdown() {
