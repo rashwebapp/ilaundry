@@ -1520,6 +1520,56 @@ function switchSuperAdminTab(tabName) {
   });
 }
 
+function handleQrisFileUpload(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    showToast('Harap pilih berkas gambar (PNG, JPG, JPEG)!', 'error');
+    return;
+  }
+
+  showToast('Memuat & mengoptimasi gambar QRIS...', 'info');
+
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    const rawDataUrl = event.target.result;
+    
+    // Optimasi ukuran gambar dengan Canvas agar hemat memori (maks lebar/tinggi 550px)
+    const img = new Image();
+    img.onload = function() {
+      const maxDim = 550;
+      let w = img.width;
+      let h = img.height;
+
+      if (w > maxDim || h > maxDim) {
+        if (w > h) {
+          h = Math.round((h * maxDim) / w);
+          w = maxDim;
+        } else {
+          w = Math.round((w * maxDim) / h);
+          h = maxDim;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.86);
+      const urlInput = document.getElementById('sa-qris-url');
+      if (urlInput) urlInput.value = optimizedDataUrl;
+
+      previewSaQris(optimizedDataUrl);
+      showToast('✅ Berhasil memilih gambar QRIS lokal!', 'success');
+    };
+    img.src = rawDataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
 function previewSaQris(url) {
   const box = document.getElementById('sa-qris-preview-box');
   const img = document.getElementById('sa-qris-preview-img');

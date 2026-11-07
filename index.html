@@ -962,14 +962,26 @@
           <label style="font-weight: 700; font-size: 0.88rem;">Nama Merchant QRIS</label>
           <input type="text" id="sa-qris-merchant" placeholder="Contoh: iLaundry Pro by RASH">
         </div>
+
+        <!-- Opsi 1: Upload File Lokal Langsung -->
+        <div class="form-group" style="margin-bottom: 12px; background: var(--primary-soft); border: 1px dashed var(--primary); padding: 14px; border-radius: var(--radius-md);">
+          <label style="font-weight: 700; font-size: 0.88rem; color: #0369a1; display: flex; align-items: center; gap: 6px;">
+            📁 Unggah Gambar QRIS dari File Lokal (HP / Laptop)
+          </label>
+          <input type="file" id="sa-qris-file" accept="image/*" onchange="handleQrisFileUpload(event)" style="margin-top: 6px; padding: 8px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); width: 100%; cursor: pointer;">
+          <small style="color: #0284c7; font-size: 0.76rem; display: block; margin-top: 4px;">Pilih foto/screenshot QRIS (PNG, JPG, JPEG) langsung dari galeri HP atau komputer Anda.</small>
+        </div>
+
+        <div style="text-align: center; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin: 10px 0;">— ATAU GUNAKAN LINK URL GAMBAR —</div>
+
         <div class="form-group" style="margin-bottom: 14px;">
           <label style="font-weight: 700; font-size: 0.88rem;">Link / URL Gambar QRIS</label>
-          <input type="url" id="sa-qris-url" placeholder="https://... atau data:image/png;base64,..." oninput="previewSaQris(this.value)">
-          <small style="color: var(--text-muted); font-size: 0.76rem;">Masukkan link langsung gambar QRIS toko Anda.</small>
+          <input type="text" id="sa-qris-url" placeholder="https://... atau otomatis terisi dari file upload di atas" oninput="previewSaQris(this.value)">
+          <small style="color: var(--text-muted); font-size: 0.76rem;">Akan otomatis terisi jika Anda memilih berkas dari HP/Laptop di atas.</small>
         </div>
         <div id="sa-qris-preview-box" style="margin-bottom: 16px; text-align: center; display: none;">
-          <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px;">Pratinjau QRIS:</div>
-          <img id="sa-qris-preview-img" src="" alt="Preview QRIS" style="max-width: 160px; height: auto; border: 1px solid var(--border); border-radius: 8px; padding: 6px;">
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px;">Pratinjau QRIS Toko:</div>
+          <img id="sa-qris-preview-img" src="" alt="Preview QRIS" style="max-width: 170px; height: auto; border: 2px solid var(--primary); border-radius: 8px; padding: 6px; background: #fff;">
         </div>
 
         <div style="border-top: 1px dashed var(--border); padding-top: 14px; margin-top: 14px;">
