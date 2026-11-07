@@ -8,7 +8,7 @@
 
 // Kredensial Demo
 const DEMO_CONFIG = {
-  APP_NAME: 'iLaundry (Demo Mode)',
+  APP_NAME: 'iLaundry Pro by RASH (Demo Mode)',
   DEMO_USER: 'admin',
   DEMO_PASS: 'demo123',
   DEMO_PASS_ALT: '1234',
@@ -271,6 +271,11 @@ function switchTab(tabId) {
   if (targetView) targetView.classList.add('active');
   if (targetNav) targetNav.classList.add('active');
 
+  // Toggle active pada mobile bottom nav
+  document.querySelectorAll('.mobile-nav-btn').forEach(btn => btn.classList.remove('active'));
+  const targetMobNav = document.getElementById(`mob-nav-${tabId}`);
+  if (targetMobNav) targetMobNav.classList.add('active');
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   if (tabId === 'admin') {
@@ -288,9 +293,19 @@ function checkAdminAuth() {
   const navAdmin = document.getElementById('nav-item-admin');
   const authContainer = document.getElementById('nav-auth-container');
 
+  const mobOrder = document.getElementById('mob-nav-order');
+  const mobAdmin = document.getElementById('mob-nav-admin');
+  const mobAuth = document.getElementById('mob-nav-auth');
+
   if (isLogged) {
     if (navOrder) navOrder.style.display = 'block';
     if (navAdmin) navAdmin.style.display = 'block';
+    if (mobOrder) mobOrder.style.display = 'flex';
+    if (mobAdmin) mobAdmin.style.display = 'flex';
+    if (mobAuth) {
+      mobAuth.innerHTML = '<span class="mob-icon">🚪</span><span class="mob-label">Logout</span>';
+      mobAuth.onclick = logoutAdmin;
+    }
     if (authContainer) {
       authContainer.innerHTML = `
         <div style="display:flex;align-items:center;gap:8px;">
@@ -302,6 +317,12 @@ function checkAdminAuth() {
   } else {
     if (navOrder) navOrder.style.display = 'none';
     if (navAdmin) navAdmin.style.display = 'none';
+    if (mobOrder) mobOrder.style.display = 'none';
+    if (mobAdmin) mobAdmin.style.display = 'none';
+    if (mobAuth) {
+      mobAuth.innerHTML = '<span class="mob-icon">🔑</span><span class="mob-label">Login</span>';
+      mobAuth.onclick = openLoginModal;
+    }
     if (authContainer) {
       authContainer.innerHTML = `
         <button id="btn-login-trigger" class="btn btn-secondary btn-sm" onclick="openLoginModal()" style="font-weight: 700;">
@@ -457,6 +478,30 @@ function renderTrackingResults(orders, keyword) {
 // VIEW 2: KATALOG & SIMULATOR TARIF
 // ============================================
 
+function getServiceIcon(name = '', jenis = '') {
+  const n = String(name || '').toLowerCase();
+  if (n.includes('express') || n.includes('kilat')) return '⚡';
+  if (n.includes('sepatu') || n.includes('sneakers')) return '👟';
+  if (n.includes('bedcover') || n.includes('selimut') || n.includes('sprei')) return '🛏️';
+  if (n.includes('setrika')) return '👔';
+  if (n.includes('jas') || n.includes('blazer') || n.includes('premium')) return '🧥';
+  if (n.includes('karpet')) return '🧶';
+  if (n.includes('gorden')) return '🪟';
+  if (jenis === 'Kiloan') return '🧺';
+  return '✨';
+}
+
+function selectServiceForSimulator(serviceId) {
+  const select = document.getElementById('sim-layanan');
+  if (select) {
+    select.value = serviceId;
+    calculateSimulation();
+    window.scrollTo({ top: 160, behavior: 'smooth' });
+    const s = state.services.find(item => item.id === serviceId);
+    showToast(`🧮 Menghitung estimasi untuk: ${s ? s.nama_layanan : ''}`, 'info');
+  }
+}
+
 function renderCatalog() {
   const container = document.getElementById('catalog-container');
   if (!container) return;
@@ -468,12 +513,23 @@ function renderCatalog() {
 
   let html = '';
   state.services.forEach(item => {
+    const icon = getServiceIcon(item.nama_layanan, item.jenis);
     html += `
-      <div class="catalog-card">
-        <div class="service-badge">${item.jenis || 'Layanan'}</div>
-        <div class="service-name">${item.nama_layanan}</div>
-        <div class="service-price">${formatRupiah(item.harga)} <span style="font-size:0.85rem;font-weight:400;color:var(--text-muted);">/ ${item.satuan}</span></div>
-        <div class="service-meta">⏱️ Estimasi: ${item.estimasi_hari || 1} Hari Kerja</div>
+      <div class="service-card" onclick="selectServiceForSimulator('${item.id}')" style="cursor: pointer;" title="Klik untuk simulasi hitung biaya">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+          <span class="badge ${item.jenis === 'Kiloan' ? 'badge-primary' : 'badge-warning'} service-badge">
+            ${item.jenis || 'Layanan'}
+          </span>
+          <span style="font-size: 1.6rem; line-height: 1;">${icon}</span>
+        </div>
+        <h3 class="service-name" style="margin-bottom: 6px;">${item.nama_layanan}</h3>
+        <div class="service-price" style="font-size: 1.25rem; margin-bottom: 10px;">
+          ${formatRupiah(item.harga)} <span class="service-unit">/ ${item.satuan}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted); border-top: 1px dashed var(--border); padding-top: 8px;">
+          <span>⏱️ ${item.estimasi_hari || 1} Hari Kerja</span>
+          <span style="color: var(--primary); font-weight: 700;">Hitung ➜</span>
+        </div>
       </div>
     `;
   });

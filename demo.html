@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>iLaundry — Mode Demo Interaktif (Sandbox)</title>
+  <title>iLaundry Pro by RASH — Mode Demo Interaktif (Sandbox)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -34,7 +34,13 @@
     <div class="container nav-container">
       <a href="#" class="brand" onclick="switchTab('tracking'); return false;">
         <div class="brand-icon">🧺</div>
-        <span>iLaundry <small style="font-size: 0.65rem; background: var(--primary-light); color: var(--primary); padding: 2px 6px; border-radius: 4px; vertical-align: middle;">DEMO</small></span>
+        <div class="brand-text-group">
+          <div class="brand-main">iLaundry <span class="brand-pro-pill">PRO</span> <small style="font-size: 0.65rem; background: var(--primary-light); color: var(--primary); padding: 2px 6px; border-radius: 4px; vertical-align: middle;">DEMO</small></div>
+          <div class="brand-by">
+            <span class="brand-by-row">by <strong class="brand-rash">RASH</strong></span>
+            <span class="brand-sub">WebApp Builder</span>
+          </div>
+        </div>
       </a>
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
         <ul class="nav-links">
@@ -212,6 +218,30 @@
 
       <!-- SUB-VIEW 1: ANTREAN TRANSAKSI -->
       <div id="admin-sub-orders">
+        <!-- Quick Actions Banner (Aksi Cepat Kasir Demo) -->
+        <div class="quick-actions-bar card" style="padding: 14px 20px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 42px; height: 42px; background: #ffffff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; box-shadow: 0 4px 10px rgba(2,132,199,0.15); flex-shrink: 0;">⚡</div>
+              <div>
+                <strong style="color: #0369a1; font-size: 0.98rem; display: block;">Aksi Cepat Kasir (Demo)</strong>
+                <p style="font-size: 0.8rem; color: #0284c7; margin: 0;">Pintasan input pesanan dan pengecekan rekap kasir dalam 1 klik</p>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-primary btn-sm" onclick="switchTab('order')" style="box-shadow: 0 4px 10px rgba(2, 132, 199, 0.35);">
+                ➕ Order Baru
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="switchAdminSubView('daily')">
+                📅 Cek Penjualan Hari Ini
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="switchAdminSubView('recap')">
+                📊 Rekap Bulanan
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Admin Stats Grid -->
         <div class="stats-grid">
           <div class="stat-card">
@@ -720,6 +750,30 @@
 
   <!-- TOAST CONTAINER -->
   <div id="toast-container" class="toast-container"></div>
+
+  <!-- MOBILE BOTTOM FLOATING NAVIGATION -->
+  <nav class="mobile-bottom-nav">
+    <button class="mobile-nav-btn active" id="mob-nav-tracking" onclick="switchTab('tracking')">
+      <span class="mob-icon">🔍</span>
+      <span class="mob-label">Lacak</span>
+    </button>
+    <button class="mobile-nav-btn" id="mob-nav-catalog" onclick="switchTab('catalog')">
+      <span class="mob-icon">📋</span>
+      <span class="mob-label">Tarif</span>
+    </button>
+    <button class="mobile-nav-btn" id="mob-nav-order" onclick="switchTab('order')" style="display: none;">
+      <span class="mob-icon">➕</span>
+      <span class="mob-label">Order</span>
+    </button>
+    <button class="mobile-nav-btn" id="mob-nav-admin" onclick="switchTab('admin')" style="display: none;">
+      <span class="mob-icon">⚙️</span>
+      <span class="mob-label">Kasir</span>
+    </button>
+    <button class="mobile-nav-btn" id="mob-nav-auth" onclick="openLoginModal()">
+      <span class="mob-icon">🔑</span>
+      <span class="mob-label">Login</span>
+    </button>
+  </nav>
 
   <!-- SCRIPTS -->
   <script src="js/demo-app.js"></script>

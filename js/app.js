@@ -123,6 +123,11 @@ function switchTab(tabId) {
   const activeBtn = document.getElementById(`nav-${tabId}`);
   if (activeBtn) activeBtn.classList.add('active');
 
+  // Toggle class active pada tombol mobile bottom nav
+  document.querySelectorAll('.mobile-nav-btn').forEach(btn => btn.classList.remove('active'));
+  const activeMobBtn = document.getElementById(`mob-nav-${tabId}`);
+  if (activeMobBtn) activeMobBtn.classList.add('active');
+
   // Toggle tampilan section
   document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
   const activeSec = document.getElementById(`view-${tabId}`);
@@ -184,6 +189,29 @@ function updateStatsDisplay(stats) {
 // KATALOG & SIMULATOR BIAYA
 // ============================================
 
+function getServiceIcon(name = '', jenis = '') {
+  const n = String(name || '').toLowerCase();
+  if (n.includes('express') || n.includes('kilat')) return '⚡';
+  if (n.includes('sepatu') || n.includes('sneakers')) return '👟';
+  if (n.includes('bedcover') || n.includes('selimut') || n.includes('sprei')) return '🛏️';
+  if (n.includes('setrika')) return '👔';
+  if (n.includes('jas') || n.includes('blazer') || n.includes('premium')) return '🧥';
+  if (n.includes('karpet')) return '🧶';
+  if (n.includes('gorden')) return '🪟';
+  if (jenis === 'Kiloan') return '🧺';
+  return '✨';
+}
+
+function selectServiceForSimulator(serviceName) {
+  const select = document.getElementById('sim-layanan');
+  if (select) {
+    select.value = serviceName;
+    calculateSimulation();
+    window.scrollTo({ top: 160, behavior: 'smooth' });
+    showToast(`🧮 Menghitung estimasi untuk: ${serviceName}`, 'info');
+  }
+}
+
 function renderCatalog() {
   const container = document.getElementById('catalog-container');
   if (!container) return;
@@ -193,20 +221,27 @@ function renderCatalog() {
     return;
   }
 
-  container.innerHTML = state.services.map(srv => `
-    <div class="service-card">
-      <div>
-        <span class="badge ${srv.jenis === 'Kiloan' ? 'badge-primary' : 'badge-warning'} service-badge">
-          ${srv.jenis || 'Layanan'}
-        </span>
-        <h3 class="service-name">${srv.nama_layanan}</h3>
-        <div class="service-price">${formatRupiah(srv.harga)} <span class="service-unit">/ ${srv.satuan}</span></div>
+  container.innerHTML = state.services.map(srv => {
+    const icon = getServiceIcon(srv.nama_layanan, srv.jenis);
+    return `
+      <div class="service-card" onclick="selectServiceForSimulator('${srv.nama_layanan}')" style="cursor: pointer;" title="Klik untuk simulasi hitung biaya">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+          <span class="badge ${srv.jenis === 'Kiloan' ? 'badge-primary' : 'badge-warning'} service-badge">
+            ${srv.jenis || 'Layanan'}
+          </span>
+          <span style="font-size: 1.6rem; line-height: 1;">${icon}</span>
+        </div>
+        <h3 class="service-name" style="margin-bottom: 6px;">${srv.nama_layanan}</h3>
+        <div class="service-price" style="font-size: 1.25rem; margin-bottom: 10px;">
+          ${formatRupiah(srv.harga)} <span class="service-unit">/ ${srv.satuan}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted); border-top: 1px dashed var(--border); padding-top: 8px;">
+          <span>⏱️ ${srv.estimasi_hari || 1} Hari Kerja</span>
+          <span style="color: var(--primary); font-weight: 700;">Hitung ➜</span>
+        </div>
       </div>
-      <div class="service-est">
-        ⏱️ Estimasi selesai: <strong>${srv.estimasi_hari || 1} Hari</strong>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function populateServiceDropdowns() {
@@ -816,6 +851,21 @@ function updateAuthUI() {
 
   if (navOrder) navOrder.style.display = isLogged ? 'block' : 'none';
   if (navAdmin) navAdmin.style.display = isLogged ? 'block' : 'none';
+
+  const mobOrder = document.getElementById('mob-nav-order');
+  const mobAdmin = document.getElementById('mob-nav-admin');
+  const mobAuth = document.getElementById('mob-nav-auth');
+  if (mobOrder) mobOrder.style.display = isLogged ? 'flex' : 'none';
+  if (mobAdmin) mobAdmin.style.display = isLogged ? 'flex' : 'none';
+  if (mobAuth) {
+    if (isLogged) {
+      mobAuth.innerHTML = '<span class="mob-icon">🚪</span><span class="mob-label">Logout</span>';
+      mobAuth.onclick = handleLogout;
+    } else {
+      mobAuth.innerHTML = '<span class="mob-icon">🔑</span><span class="mob-label">Login</span>';
+      mobAuth.onclick = openLoginModal;
+    }
+  }
 
   if (authContainer) {
     if (isLogged) {

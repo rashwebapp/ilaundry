@@ -1,9 +1,11 @@
 ================================================================================
                     RANGKUMAN FITUR & DOKUMENTASI SISTEM
-                             iLAUNDRY EXPRESS
+                       iLAUNDRY PRO by RASH WebApp Builder
 ================================================================================
 
-Tanggal Pembuatan : 5 November 2026
+Nama Brand        : iLaundry Pro
+Developer/Vendor  : RASH (WebApp Builder)
+Tanggal Pembaruan : 7 November 2026
 Arsitektur        : Decoupled Full-Stack (GAS-PRO-API)
   - Frontend      : HTML5, Vanilla CSS3 (Custom Responsive), Vanilla JavaScript
   - Deployment    : GitHub Pages (SSL Gratis, CDN Global)
