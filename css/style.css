@@ -928,6 +928,9 @@ body {
     visibility: visible !important;
     color: #000000 !important;
   }
+  #printable-receipt-area img {
+    display: none !important;
+  }
 }
 
 

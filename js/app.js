@@ -1004,8 +1004,10 @@ function openReceiptModal(order) {
     }
   }
 
-  document.getElementById('rcp-qr-img').src = qrUrl;
-  document.getElementById('rcp-direct-url').textContent = directUrl;
+  const qrEl = document.getElementById('rcp-qr-img');
+  if (qrEl) qrEl.src = qrUrl;
+  const directUrlEl = document.getElementById('rcp-direct-url');
+  if (directUrlEl) directUrlEl.textContent = directUrl;
 
   const btnWa = document.getElementById('rcp-btn-wa');
   if (btnWa) {
