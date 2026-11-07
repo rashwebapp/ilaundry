@@ -20,16 +20,60 @@ Arsitektur        : Decoupled Full-Stack (GAS-PRO-API)
 * Backend API Endpoint  : https://script.google.com/macros/s/AKfycbyJwI96WO7JLOn2hFAFRU7KvWYwHq7i_hjoUk7h8979W6wBuK4fJZFH0m97aSSfHBc0/exec
 * Repository GitHub     : https://github.com/rashwebapp/ilaundry
 
-* Akses Panel Kasir (Default):
-  - Username : admin
-  - Password : 1234
-  (Disimpan aman di LocalStorage 'ilaundry_cashier_session', bisa logout kapan saja)
+* Akses Petugas & Super Admin (Default):
+  - Kasir (Staff)       : Username: admin | PIN: 1234
+  - Super Admin (Owner) : Username: owner | Sandi: owner123
+  (Super Admin memiliki akses penuh ke Pengaturan Toko & Harga mandiri)
 
 --------------------------------------------------------------------------------
 2. FITUR LENGKAP YANG TELAH SELESAI
 --------------------------------------------------------------------------------
 
-A. PORTAL PUBLIK PELANGGAN (Bisa Diakses Pelanggan Kapan Saja)
+A. LOGIN SUPER ADMIN (OWNER) & PENGATURAN MANDIRI
+   1. Hak Akses Eksklusif Super Admin:
+      - Tombol khusus "👑 Pengaturan Toko & Harga" muncul otomatis di navbar dan panel kasir.
+   2. Kelola Harga Katalog Mandiri:
+      - Owner bisa mengubah tarif layanan secara mandiri langsung dari aplikasi tanpa sentuh spreadsheet/kode.
+      - Tambah paket cucian baru, ubah estimasi hari pengerjaan, dan nonaktifkan layanan.
+   3. Ganti Nomor WhatsApp CS Mandiri:
+      - Nomor CS default 08982485685 dapat diganti kapan saja secara mandiri.
+      - Otomatis memperbarui tombol CS di seluruh website, footer, struk nota, dan notifikasi WA.
+   4. Otomatisasi WhatsApp (Fonnte Gateway):
+      - Sakelar (toggle switch) On/Off pengiriman WhatsApp otomatis.
+      - Input Fonnte API Token secara mandiri + panduan integrasi.
+   5. Konfigurasi QRIS & Rekening Bank Transfer:
+      - Input link/URL gambar QRIS toko + nama merchant resmi.
+      - Input nomor rekening bank (BCA, Mandiri, BRI, dll.), nama bank, dan nama pemilik rekening.
+   6. Keamanan & Sandi:
+      - Ganti password Super Admin / Owner kapan saja secara fleksibel.
+
+B. METODE PEMBAYARAN CASH, QRIS, TRANSFER & KALKULATOR KEMBALIAN
+   1. Fleksibilitas Waktu Pembayaran:
+      - Bayar Sekarang (Lunas): Pelanggan membayar langsung saat serah terima cucian di outlet.
+      - Bayar Saat Ambil (Belum Lunas): Pelunasan ditunda saat cucian sudah selesai diproses.
+   2. Pembayaran CASH (Tunai) & Kalkulator Kembalian Cerdas:
+      - Input nominal uang tunai yang diserahkan pelanggan.
+      - Kalkulasi kembalian otomatis real-time (Rp 0 jika uang pas, warna hijau jika kembali, merah jika kurang).
+      - Tombol cepat nominal: [Uang Pas], [+10.000], [+20.000], [+50.000], [+100.000].
+   3. Pembayaran QRIS Dinamis:
+      - Menampilkan barcode QRIS toko + nama merchant iLaundry Pro.
+      - Menampilkan panduan nominal pembayaran yang tepat untuk pelanggan.
+   4. Pembayaran Transfer Bank:
+      - Menampilkan nomor rekening, bank tujuan, dan tombol 1-klik "Salin Nomor Rekening".
+   5. Modal Pelunasan Pembayaran (Saat Pengambilan Cucian):
+      - Di tabel kasir, pesanan berstatus "Belum Lunas" memiliki tombol cepat "💰 Pelunasan".
+      - Kasir dapat menyelesaikan transaksi via CASH (dengan kalkulasi kembalian), QRIS, atau Transfer.
+      - Status pesanan otomatis diperbarui menjadi "Selesai" dan langsung mencetak Struk Pelunasan Lunas.
+
+C. DATABASE PELANGGAN & AUTOCOMPLETE NAMA (MINIMAL 3 KARAKTER)
+   1. Database Pelanggan Terintegrasi:
+      - Riwayat pelanggan lama dan baru otomatis tersimpan dan terkelompokkan.
+   2. Fitur Autocomplete Cerdas:
+      - Saat kasir mengetik minimal 3 huruf di kolom nama (misal: "bud" atau "sit"), sistem langsung menampilkan daftar saran pelanggan setia.
+      - Setiap saran menampilkan: Nama, Nomor WhatsApp, dan Jumlah Riwayat Order.
+      - Klik pada nama pelanggan akan OTOMATIS mengisi kolom Nama dan Nomor WhatsApp! Kasir tidak perlu menanyakan nomor HP lagi.
+
+D. PORTAL PUBLIK PELANGGAN (Bisa Diakses Pelanggan Kapan Saja)
    1. Live Stepper Tracking:
       - Pelanggan dapat melacak cucian dengan memasukkan Nomor Resi (misal: IL-2411-001)
         atau Nomor WhatsApp (misal: 081234567890).

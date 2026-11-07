@@ -157,9 +157,10 @@
 
         <form id="order-form" onsubmit="handleCreateOrder(event)">
           <div class="form-grid">
-            <div class="form-group">
+            <div class="form-group autocomplete-wrapper">
               <label for="order-nama">Nama Lengkap Pelanggan *</label>
-              <input type="text" id="order-nama" placeholder="Contoh: Andi Wijaya" required>
+              <input type="text" id="order-nama" placeholder="Ketik minimal 3 huruf nama pelanggan..." oninput="handleCustomerNameInput(this.value)" autocomplete="off" required>
+              <div id="customer-suggestions" class="autocomplete-dropdown"></div>
             </div>
             <div class="form-group">
               <label for="order-wa">No. WhatsApp Aktif *</label>
@@ -180,18 +181,110 @@
             </div>
           </div>
 
-          <div class="form-group" style="margin-bottom: 20px;">
+          <div class="form-group" style="margin-bottom: 16px;">
             <label for="order-catatan">Catatan Khusus (Opsional)</label>
             <textarea id="order-catatan" rows="2" placeholder="Contoh: Pakaian luntur harap dipisah, detergen hypoallergenic, dll."></textarea>
           </div>
 
           <!-- Total Ringkasan Box -->
-          <div style="background: #f8fafc; border: 1px solid var(--border); padding: 16px; border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+          <div style="background: #f8fafc; border: 1px solid var(--border); padding: 16px; border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
             <div>
               <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">TOTAL ESTIMASI BIAYA</div>
               <div id="order-total-preview" style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">Rp 0</div>
             </div>
-            <span class="badge badge-warning">Simulasi Pembayaran Kasir</span>
+            <span id="order-timing-badge" class="badge badge-success">Bayar Sekarang (Lunas)</span>
+          </div>
+
+          <!-- Pilihan Waktu & Metode Pembayaran -->
+          <div style="background: #f8fafc; border: 1px solid var(--border); padding: 16px; border-radius: var(--radius-md); margin-bottom: 24px;">
+            <label style="font-size: 0.88rem; font-weight: 700; color: var(--dark); display: block; margin-bottom: 8px;">
+              💳 Waktu & Status Pembayaran
+            </label>
+            
+            <div class="pay-timing-group">
+              <label class="pay-timing-card active" id="timing-card-lunas" onclick="selectPayTiming('Lunas')">
+                <input type="radio" name="pay-timing" id="pay-timing-lunas" value="Lunas" checked>
+                <div>
+                  <strong style="display:block; font-size: 0.88rem; color: #15803d;">Bayar Sekarang (Lunas)</strong>
+                  <small style="color: var(--text-muted); font-size: 0.74rem;">Pelanggan bayar langsung saat serahkan cucian</small>
+                </div>
+              </label>
+
+              <label class="pay-timing-card" id="timing-card-belum" onclick="selectPayTiming('Belum Lunas')">
+                <input type="radio" name="pay-timing" id="pay-timing-belum" value="Belum Lunas">
+                <div>
+                  <strong style="display:block; font-size: 0.88rem; color: #b45309;">Bayar Saat Ambil</strong>
+                  <small style="color: var(--text-muted); font-size: 0.74rem;">Pelunasan dilakukan saat cucian selesai & diambil</small>
+                </div>
+              </label>
+            </div>
+
+            <!-- Pilihan Metode Bayar (Aktif jika Bayar Sekarang) -->
+            <div id="order-pay-methods-area">
+              <label style="font-size: 0.84rem; font-weight: 700; color: var(--dark); display: block; margin-bottom: 8px;">
+                Pilih Metode Pembayaran:
+              </label>
+              <div class="pay-methods-grid">
+                <div class="pay-method-btn active" id="pay-btn-cash" onclick="selectPayMethod('CASH')">
+                  <span class="pay-method-icon">💵</span>
+                  <span class="pay-method-label">CASH / TUNAI</span>
+                </div>
+                <div class="pay-method-btn" id="pay-btn-qris" onclick="selectPayMethod('QRIS')">
+                  <span class="pay-method-icon">📱</span>
+                  <span class="pay-method-label">QRIS</span>
+                </div>
+                <div class="pay-method-btn" id="pay-btn-transfer" onclick="selectPayMethod('TRANSFER')">
+                  <span class="pay-method-icon">🏦</span>
+                  <span class="pay-method-label">TRANSFER BANK</span>
+                </div>
+              </div>
+
+              <!-- CASH Detail & Calculator -->
+              <div id="order-cash-detail-box" style="margin-top: 10px;">
+                <div class="form-group" style="margin-bottom: 6px;">
+                  <label for="order-cash-nominal" style="font-size: 0.82rem; font-weight: 700;">Nominal Uang Tunai Diterima (Rp) *</label>
+                  <input type="number" id="order-cash-nominal" placeholder="Contoh: 50000" oninput="calculateOrderChange()" style="font-weight: 700; font-size: 1.1rem;">
+                </div>
+                <div class="quick-cash-chips">
+                  <span style="font-size: 0.75rem; color: var(--text-muted); align-self: center;">Pintasan:</span>
+                  <button type="button" class="quick-cash-btn" onclick="setQuickCash('exact')">Uang Pas</button>
+                  <button type="button" class="quick-cash-btn" onclick="setQuickCash(10000)">10.000</button>
+                  <button type="button" class="quick-cash-btn" onclick="setQuickCash(20000)">20.000</button>
+                  <button type="button" class="quick-cash-btn" onclick="setQuickCash(50000)">50.000</button>
+                  <button type="button" class="quick-cash-btn" onclick="setQuickCash(100000)">100.000</button>
+                </div>
+                <div class="change-calc-box">
+                  <div>
+                    <div style="font-size: 0.78rem; font-weight: 700; color: #166534;">KEMBALIAN PELANGGAN</div>
+                    <div id="order-change-preview" class="change-amount">Rp 0</div>
+                  </div>
+                  <span id="order-change-status" class="badge badge-success" style="font-size: 0.76rem;">Uang Pas</span>
+                </div>
+              </div>
+
+              <!-- QRIS Box -->
+              <div id="order-qris-detail-box" style="display: none; background: #ffffff; border: 1px dashed var(--border); padding: 14px; border-radius: var(--radius-md); text-align: center;">
+                <div style="font-weight: 700; color: var(--dark); margin-bottom: 4px;" id="order-qris-merchant">QRIS iLaundry Pro by RASH</div>
+                <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 10px;">Arahkan kamera / aplikasi e-Wallet atau m-Banking pelanggan ke QRIS di bawah ini</p>
+                <div id="order-qris-img-container" style="display: inline-block; padding: 10px; background: #fff; border: 1px solid var(--border); border-radius: 8px;">
+                  <img id="order-qris-img" src="" alt="QRIS Toko" style="max-width: 190px; height: auto; display: block; margin: 0 auto;">
+                </div>
+                <div style="margin-top: 10px; font-size: 0.8rem; color: #15803d; font-weight: 700;">✅ Pastikan nominal transfer sesuai total: <span id="order-qris-total-text">Rp 0</span></div>
+              </div>
+
+              <!-- Transfer Box -->
+              <div id="order-transfer-detail-box" style="display: none; background: #ffffff; border: 1px dashed var(--border); padding: 14px; border-radius: var(--radius-md);">
+                <div style="font-weight: 700; color: var(--dark); font-size: 0.92rem; margin-bottom: 8px;">🏦 Rincian Rekening Laundry</div>
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; background: #f8fafc; padding: 10px 14px; border-radius: 8px;">
+                  <div>
+                    <div style="font-size: 0.76rem; color: var(--text-muted);" id="order-bank-name">BANK BCA</div>
+                    <div style="font-size: 1.1rem; font-weight: 800; color: var(--primary);" id="order-bank-acc">1234567890</div>
+                    <div style="font-size: 0.8rem; font-weight: 600;" id="order-bank-holder">a.n. iLaundry Pro by RASH</div>
+                  </div>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="copyBankAcc()">📋 Salin Rekening</button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <button type="submit" id="btn-submit-order" class="btn btn-primary" style="width: 100%;">
@@ -277,6 +370,9 @@
               </button>
               <button class="btn btn-secondary btn-sm" onclick="openImportModal()">
                 📥 Import Data Lama
+              </button>
+              <button id="btn-superadmin-panel" class="btn btn-secondary btn-sm" onclick="openSuperAdminModal()" style="display: none; background: #fff7ed; border-color: #fdba74; color: #c2410c; font-weight: 700;">
+                👑 Pengaturan Toko & Harga
               </button>
               <button class="btn btn-secondary btn-sm" onclick="logoutAdmin()" title="Kunci Akses Kasir">
                 🔒 Kunci Kasir
@@ -619,6 +715,18 @@
           <span>Status Bayar:</span>
           <strong id="rcp-pay-status">-</strong>
         </div>
+        <div class="receipt-row" id="rcp-row-method" style="margin-top: 2px;">
+          <span>Metode Bayar:</span>
+          <span id="rcp-pay-method">-</span>
+        </div>
+        <div class="receipt-row" id="rcp-row-cash" style="display: none; margin-top: 2px;">
+          <span>Uang Diterima:</span>
+          <span id="rcp-pay-cash">Rp 0</span>
+        </div>
+        <div class="receipt-row" id="rcp-row-change" style="display: none; margin-top: 2px;">
+          <span>Kembalian:</span>
+          <strong id="rcp-pay-change">Rp 0</strong>
+        </div>
 
         <div class="receipt-qr">
           <p>Scan untuk Lacak Cucian:</p>
@@ -645,35 +753,281 @@
     </div>
   </div>
 
-  <!-- MODAL: LOGIN ADMIN / KASIR -->
+  <!-- MODAL: LOGIN KASIR & SUPER ADMIN DEMO -->
   <div id="login-modal" class="modal-overlay">
-    <div class="modal-dialog" style="max-width: 380px; padding: 24px;">
+    <div class="modal-dialog" style="max-width: 400px; padding: 24px;">
       <div class="modal-header">
-        <h3 style="font-size: 1.15rem; font-weight: 800;">🔐 Login Petugas Kasir Demo</h3>
+        <h3 style="font-size: 1.15rem; font-weight: 800;">🔐 Login Sistem iLaundry (Demo)</h3>
         <button class="modal-close" onclick="closeLoginModal()">&times;</button>
       </div>
-      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 18px;">
-        Gunakan kredensial demo untuk mencoba menu Order Baru dan Panel Kasir.
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+        Masuk sebagai <strong>Petugas Kasir</strong> atau <strong>Super Admin (Owner)</strong> untuk mencoba semua fitur.
       </p>
+
+      <!-- Petunjuk Akun Demo -->
+      <div style="background: #f8fafc; border: 1px solid var(--border); padding: 10px 14px; border-radius: var(--radius-md); font-size: 0.78rem; margin-bottom: 16px; line-height: 1.5;">
+        <div>👤 <strong>Kasir:</strong> Username: <code>admin</code> | PIN: <code>1234</code> atau <code>demo123</code></div>
+        <div style="margin-top: 4px;">👑 <strong>Super Admin:</strong> Username: <code>owner</code> | Sandi: <code>owner123</code></div>
+      </div>
 
       <form id="admin-login-form" onsubmit="handleLoginSubmit(event)">
         <div class="form-group" style="margin-bottom: 14px;">
           <label style="font-size: 0.85rem; font-weight: 700;">Username</label>
-          <input type="text" id="login-username" value="admin" placeholder="admin" required autofocus>
+          <input type="text" id="login-username" value="admin" placeholder="admin atau owner" required autofocus>
         </div>
         <div class="form-group" style="margin-bottom: 20px;">
           <label style="font-size: 0.85rem; font-weight: 700;">Password / PIN</label>
-          <input type="password" id="login-password" value="demo123" placeholder="demo123" required>
+          <input type="password" id="login-password" value="demo123" placeholder="••••" required>
         </div>
         <div style="display: flex; gap: 8px;">
           <button type="submit" class="btn btn-primary" style="flex: 1;">
-            Masuk Kasir ➜
+            Masuk Sekarang ➜
           </button>
           <button type="button" class="btn btn-secondary" onclick="closeLoginModal()">
             Batal
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: PELUNASAN PEMBAYARAN (SAAT PENGAMBILAN CUCIAN) -->
+  <div id="settlement-modal" class="modal-overlay">
+    <div class="modal-dialog" style="max-width: 440px; padding: 22px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+          💰 Pelunasan Tagihan Laundry
+        </h3>
+        <button class="modal-close" onclick="closeSettlementModal()">&times;</button>
+      </div>
+      <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 14px;">
+        Konfirmasi pembayaran cucian yang siap diambil oleh pelanggan.
+      </p>
+
+      <!-- Info Pesanan -->
+      <div style="background: #f8fafc; border: 1px solid var(--border); padding: 14px; border-radius: var(--radius-md); margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 0.78rem; font-weight: 700; color: var(--primary);" id="stl-resi">IL-XXXX-XXX</span>
+          <span class="badge badge-danger">Belum Lunas</span>
+        </div>
+        <div style="font-weight: 800; font-size: 1.05rem;" id="stl-nama">-</div>
+        <div style="font-size: 0.82rem; color: var(--text-muted);" id="stl-layanan">-</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border); padding-top: 8px; margin-top: 8px;">
+          <span style="font-weight: 700; font-size: 0.85rem;">TOTAL TAGIHAN:</span>
+          <span style="font-weight: 800; font-size: 1.3rem; color: var(--primary);" id="stl-total">Rp 0</span>
+        </div>
+      </div>
+
+      <!-- Pilihan Metode Pelunasan -->
+      <label style="font-size: 0.84rem; font-weight: 700; color: var(--dark); display: block; margin-bottom: 8px;">
+        Pilih Metode Pembayaran Pelunasan:
+      </label>
+      <div class="pay-methods-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 14px;">
+        <div class="pay-method-btn active" id="stl-method-cash" onclick="selectStlMethod('CASH')">
+          <span class="pay-method-icon">💵</span>
+          <span class="pay-method-label">CASH</span>
+        </div>
+        <div class="pay-method-btn" id="stl-method-qris" onclick="selectStlMethod('QRIS')">
+          <span class="pay-method-icon">📱</span>
+          <span class="pay-method-label">QRIS</span>
+        </div>
+        <div class="pay-method-btn" id="stl-method-transfer" onclick="selectStlMethod('TRANSFER')">
+          <span class="pay-method-icon">🏦</span>
+          <span class="pay-method-label">TRANSFER</span>
+        </div>
+      </div>
+
+      <!-- Detail CASH Pelunasan -->
+      <div id="stl-cash-box">
+        <div class="form-group" style="margin-bottom: 6px;">
+          <label style="font-size: 0.82rem; font-weight: 700;">Nominal Uang Tunai Diterima (Rp) *</label>
+          <input type="number" id="stl-cash-input" placeholder="Contoh: 50000" oninput="calculateStlChange()" style="font-weight: 700; font-size: 1.1rem;">
+        </div>
+        <div class="quick-cash-chips">
+          <button type="button" class="quick-cash-btn" onclick="setStlQuickCash('exact')">Uang Pas</button>
+          <button type="button" class="quick-cash-btn" onclick="setStlQuickCash(10000)">10.000</button>
+          <button type="button" class="quick-cash-btn" onclick="setStlQuickCash(20000)">20.000</button>
+          <button type="button" class="quick-cash-btn" onclick="setStlQuickCash(50000)">50.000</button>
+          <button type="button" class="quick-cash-btn" onclick="setStlQuickCash(100000)">100.000</button>
+        </div>
+        <div class="change-calc-box">
+          <div>
+            <div style="font-size: 0.78rem; font-weight: 700; color: #166534;">KEMBALIAN PELANGGAN</div>
+            <div id="stl-change-preview" class="change-amount">Rp 0</div>
+          </div>
+          <span id="stl-change-status" class="badge badge-success" style="font-size: 0.76rem;">Uang Pas</span>
+        </div>
+      </div>
+
+      <!-- Detail QRIS Pelunasan -->
+      <div id="stl-qris-box" style="display: none; background: #ffffff; border: 1px dashed var(--border); padding: 12px; border-radius: var(--radius-md); text-align: center; margin-bottom: 14px;">
+        <div style="font-weight: 700; font-size: 0.88rem; margin-bottom: 4px;" id="stl-qris-merchant-title">Scan QRIS Laundry</div>
+        <img id="stl-qris-img" src="" alt="QRIS" style="max-width: 170px; height: auto; display: block; margin: 0 auto 6px;">
+        <div style="font-size: 0.82rem; font-weight: 700; color: #15803d;">Nominal: <span id="stl-qris-nominal">Rp 0</span></div>
+      </div>
+
+      <!-- Detail Transfer Pelunasan -->
+      <div id="stl-transfer-box" style="display: none; background: #f8fafc; border: 1px dashed var(--border); padding: 12px; border-radius: var(--radius-md); margin-bottom: 14px;">
+        <div style="font-size: 0.76rem; color: var(--text-muted);" id="stl-bank-name">BANK BCA</div>
+        <div style="font-size: 1.1rem; font-weight: 800; color: var(--primary);" id="stl-bank-acc">1234567890</div>
+        <div style="font-size: 0.8rem; font-weight: 600;" id="stl-bank-holder">a.n. iLaundry Pro by RASH</div>
+      </div>
+
+      <!-- Status Pengerjaan Opsional -->
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">Ubah Status Pengerjaan Sekaligus:</label>
+        <select id="stl-status-cucian" style="padding: 6px 10px; border-radius: var(--radius-md); border: 1px solid var(--border); width: 100%; font-size: 0.86rem; font-weight: 600;">
+          <option value="Selesai" selected>✅ Selesai (Sudah Diserahkan ke Pelanggan)</option>
+          <option value="Siap Diambil">📦 Tetap "Siap Diambil"</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="btn btn-primary" style="flex: 1;" onclick="submitSettlementPayment()">
+          💾 Simpan Pelunasan & Cetak Nota
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="closeSettlementModal()">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PENGATURAN SUPER ADMIN (OWNER SELF-SERVICE) -->
+  <div id="super-admin-modal" class="modal-overlay">
+    <div class="modal-dialog" style="max-width: 680px; padding: 24px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+          👑 Pengaturan Toko & Harga (Super Admin)
+        </h3>
+        <button class="modal-close" onclick="closeSuperAdminModal()">&times;</button>
+      </div>
+      <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 16px;">
+        Panel mandiri Super Admin untuk mengatur nomor CS, tarif harga katalog, integrasi WhatsApp Fonnte, QRIS, dan rekening bank.
+      </p>
+
+      <!-- Super Admin Navigation Tabs -->
+      <div class="super-admin-nav-tabs">
+        <button id="sa-tab-btn-general" class="active" onclick="switchSuperAdminTab('general')">📞 CS & Kontak</button>
+        <button id="sa-tab-btn-pricing" onclick="switchSuperAdminTab('pricing')">🏷️ Kelola Harga</button>
+        <button id="sa-tab-btn-wa" onclick="switchSuperAdminTab('wa')">💬 WA Fonnte</button>
+        <button id="sa-tab-btn-qris" onclick="switchSuperAdminTab('qris')">💳 QRIS & Rekening</button>
+        <button id="sa-tab-btn-security" onclick="switchSuperAdminTab('security')">🔒 Sandi</button>
+      </div>
+
+      <!-- TAB 1: CS & KONTAK UMUM -->
+      <div id="sa-tab-general">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label style="font-weight: 700; font-size: 0.88rem;">Nomor WhatsApp CS / Laundry *</label>
+          <input type="tel" id="sa-cs-phone" placeholder="Contoh: 08982485685" style="font-weight: 700; font-size: 1rem;">
+          <small style="color: var(--text-muted); font-size: 0.76rem;">Nomor ini akan tampil pada tombol CS, cetakan struk nota, dan pesan WhatsApp pelanggan.</small>
+        </div>
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label style="font-weight: 700; font-size: 0.88rem;">Nama Toko / Laundry</label>
+          <input type="text" id="sa-store-name" placeholder="iLaundry Pro by RASH">
+        </div>
+      </div>
+
+      <!-- TAB 2: KATALOG & HARGA MANDIRI -->
+      <div id="sa-tab-pricing" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <strong style="font-size: 0.92rem;">Daftar Layanan & Tarif Saat Ini</strong>
+          <button type="button" class="btn btn-primary btn-sm" onclick="openServicesModal()">
+            ➕ Tambah / Edit Layanan Detail
+          </button>
+        </div>
+        <div class="table-responsive" style="max-height: 240px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 16px;">
+          <table class="data-table" style="font-size: 0.84rem;">
+            <thead>
+              <tr>
+                <th>Layanan</th>
+                <th>Jenis</th>
+                <th>Tarif (Rp)</th>
+                <th>Satuan</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="sa-pricing-table-tbody">
+              <tr><td colspan="5" style="text-align: center;">Memuat katalog...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 3: WA OTOMATIS FONNTE -->
+      <div id="sa-tab-wa" style="display: none;">
+        <div style="background: var(--primary-soft); border: 1px solid #bae6fd; padding: 14px; border-radius: var(--radius-md); margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <strong style="color: #0369a1; font-size: 0.92rem;">Status Notifikasi WhatsApp Otomatis (Fonnte)</strong>
+            <label style="position: relative; display: inline-flex; align-items: center; cursor: pointer; gap: 8px;">
+              <input type="checkbox" id="sa-fonnte-toggle" style="width: 20px; height: 20px; accent-color: var(--primary);">
+              <span id="sa-fonnte-toggle-label" style="font-weight: 700; font-size: 0.85rem; color: var(--primary);">Aktif</span>
+            </label>
+          </div>
+          <p style="font-size: 0.78rem; color: #0284c7; margin: 0;">
+            Jika diaktifkan, nota pesanan dan notifikasi selesai akan otomatis dikirimkan ke nomor WhatsApp pelanggan.
+          </p>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label style="font-weight: 700; font-size: 0.88rem;">Fonnte API Token</label>
+          <input type="text" id="sa-fonnte-token" placeholder="Tempel token API Fonnte Anda..." style="font-family: monospace;">
+          <small style="color: var(--text-muted); font-size: 0.76rem;">Dapatkan token gratis di <a href="https://fonnte.com" target="_blank" style="color: var(--primary);">fonnte.com</a></small>
+        </div>
+      </div>
+
+      <!-- TAB 4: QRIS & REKENING BANK -->
+      <div id="sa-tab-qris" style="display: none;">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label style="font-weight: 700; font-size: 0.88rem;">Nama Merchant QRIS</label>
+          <input type="text" id="sa-qris-merchant" placeholder="Contoh: iLaundry Pro by RASH">
+        </div>
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label style="font-weight: 700; font-size: 0.88rem;">Link / URL Gambar QRIS</label>
+          <input type="url" id="sa-qris-url" placeholder="https://... atau data:image/png;base64,..." oninput="previewSaQris(this.value)">
+          <small style="color: var(--text-muted); font-size: 0.76rem;">Masukkan link langsung gambar QRIS toko Anda.</small>
+        </div>
+        <div id="sa-qris-preview-box" style="margin-bottom: 16px; text-align: center; display: none;">
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px;">Pratinjau QRIS:</div>
+          <img id="sa-qris-preview-img" src="" alt="Preview QRIS" style="max-width: 160px; height: auto; border: 1px solid var(--border); border-radius: 8px; padding: 6px;">
+        </div>
+
+        <div style="border-top: 1px dashed var(--border); padding-top: 14px; margin-top: 14px;">
+          <strong style="display: block; margin-bottom: 10px; font-size: 0.92rem;">Informasi Rekening Bank (Untuk Pembayaran Transfer)</strong>
+          <div class="form-grid" style="margin-bottom: 10px;">
+            <div class="form-group">
+              <label style="font-size: 0.82rem; font-weight: 700;">Nama Bank</label>
+              <input type="text" id="sa-bank-name" placeholder="BCA / Mandiri / BRI">
+            </div>
+            <div class="form-group">
+              <label style="font-size: 0.82rem; font-weight: 700;">Nomor Rekening</label>
+              <input type="text" id="sa-bank-number" placeholder="Contoh: 1234567890">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label style="font-size: 0.82rem; font-weight: 700;">Atas Nama Rekening</label>
+            <input type="text" id="sa-bank-holder" placeholder="Contoh: RASH Laundry Express">
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: KEAMANAN & SANDI -->
+      <div id="sa-tab-security" style="display: none;">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label style="font-weight: 700; font-size: 0.88rem;">Password Baru Super Admin (Owner)</label>
+          <input type="password" id="sa-admin-pass" placeholder="Biarkan kosong jika tidak ingin mengubah sandi">
+          <small style="color: var(--text-muted); font-size: 0.76rem;">Default: <code>owner123</code></small>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px;">
+        <button type="button" class="btn btn-primary" style="flex: 1;" onclick="saveSuperAdminSettings()">
+          💾 Simpan Semua Pengaturan
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="closeSuperAdminModal()">
+          Tutup
+        </button>
+      </div>
     </div>
   </div>
 

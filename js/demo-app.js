@@ -147,10 +147,38 @@ const DEFAULT_DEMO_ORDERS = [
   }
 ];
 
+const DEFAULT_DEMO_CUSTOMERS = [
+  { nama_pelanggan: 'Budi Santoso', no_whatsapp: '081234567890', total_orders: 5 },
+  { nama_pelanggan: 'Siti Rahma', no_whatsapp: '085211223344', total_orders: 3 },
+  { nama_pelanggan: 'Ahmad Fauzi', no_whatsapp: '087899887766', total_orders: 4 },
+  { nama_pelanggan: 'Rina Marlina', no_whatsapp: '081377889900', total_orders: 2 },
+  { nama_pelanggan: 'Doni Prasetyo', no_whatsapp: '082155667788', total_orders: 1 },
+  { nama_pelanggan: 'Hendra Gunawan', no_whatsapp: '081922334455', total_orders: 3 }
+];
+
+const DEFAULT_DEMO_SETTINGS = {
+  cs_phone: '08982485685',
+  store_name: 'iLaundry Pro by RASH',
+  fonnte_active: true,
+  fonnte_token: 'FbknoZ6kJ16R7BZGgJap',
+  qris_image_url: '',
+  qris_merchant_name: 'iLaundry Pro by RASH',
+  bank_name: 'BCA',
+  bank_account_number: '1234567890',
+  bank_account_holder: 'RASH Laundry Express',
+  super_admin_pass: 'owner123'
+};
+
 // State Demo
 const state = {
   services: [],
   orders: [],
+  customers: [],
+  settings: {},
+  currentOrderPayTiming: 'Lunas',
+  currentOrderPayMethod: 'CASH',
+  activeSettlementOrder: null,
+  settlementPayMethod: 'CASH',
   currentTab: 'tracking',
   isLoading: false
 };
@@ -168,14 +196,26 @@ function initDemoStorage(forceReset = false) {
   if (forceReset || !localStorage.getItem('ilaundry_demo_orders')) {
     localStorage.setItem('ilaundry_demo_orders', JSON.stringify(DEFAULT_DEMO_ORDERS));
   }
+  if (forceReset || !localStorage.getItem('ilaundry_demo_customers')) {
+    localStorage.setItem('ilaundry_demo_customers', JSON.stringify(DEFAULT_DEMO_CUSTOMERS));
+  }
+  if (forceReset || !localStorage.getItem('ilaundry_demo_settings')) {
+    localStorage.setItem('ilaundry_demo_settings', JSON.stringify(DEFAULT_DEMO_SETTINGS));
+  }
 
   try {
     state.services = JSON.parse(localStorage.getItem('ilaundry_demo_services')) || [];
     state.orders = JSON.parse(localStorage.getItem('ilaundry_demo_orders')) || [];
+    state.customers = JSON.parse(localStorage.getItem('ilaundry_demo_customers')) || DEFAULT_DEMO_CUSTOMERS;
+    state.settings = JSON.parse(localStorage.getItem('ilaundry_demo_settings')) || DEFAULT_DEMO_SETTINGS;
   } catch (e) {
     state.services = DEFAULT_DEMO_SERVICES;
     state.orders = DEFAULT_DEMO_ORDERS;
+    state.customers = DEFAULT_DEMO_CUSTOMERS;
+    state.settings = DEFAULT_DEMO_SETTINGS;
   }
+
+  applyStoreSettings(state.settings);
 }
 
 function saveDemoOrders() {
@@ -287,15 +327,23 @@ function switchTab(tabId) {
   }
 }
 
+function isSuperAdmin() {
+  return localStorage.getItem('ilaundry_demo_role') === 'superadmin';
+}
+
 function checkAdminAuth() {
   const isLogged = localStorage.getItem('ilaundry_demo_cashier_session') === 'logged_in';
+  const isOwner = isSuperAdmin();
   const navOrder = document.getElementById('nav-item-order');
   const navAdmin = document.getElementById('nav-item-admin');
   const authContainer = document.getElementById('nav-auth-container');
+  const btnSaPanel = document.getElementById('btn-superadmin-panel');
 
   const mobOrder = document.getElementById('mob-nav-order');
   const mobAdmin = document.getElementById('mob-nav-admin');
   const mobAuth = document.getElementById('mob-nav-auth');
+
+  if (btnSaPanel) btnSaPanel.style.display = isOwner ? 'inline-flex' : 'none';
 
   if (isLogged) {
     if (navOrder) navOrder.style.display = 'block';
@@ -307,9 +355,14 @@ function checkAdminAuth() {
       mobAuth.onclick = logoutAdmin;
     }
     if (authContainer) {
+      const badgeHtml = isOwner 
+        ? `<span class="badge-owner">👑 Super Admin</span>
+           <button class="btn btn-secondary btn-sm" onclick="openSuperAdminModal()" style="font-weight:700; background:#fff7ed; border-color:#fdba74; color:#c2410c;">⚙️ Pengaturan</button>`
+        : `<span style="font-size:0.8rem;color:var(--accent);font-weight:700;">🟢 Kasir Demo</span>`;
+
       authContainer.innerHTML = `
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:0.8rem;color:var(--accent);font-weight:700;">🟢 Kasir Demo</span>
+          ${badgeHtml}
           <button class="btn btn-secondary btn-sm" onclick="logoutAdmin()" style="font-size:0.75rem;padding:4px 8px;">Keluar</button>
         </div>
       `;
@@ -326,7 +379,7 @@ function checkAdminAuth() {
     if (authContainer) {
       authContainer.innerHTML = `
         <button id="btn-login-trigger" class="btn btn-secondary btn-sm" onclick="openLoginModal()" style="font-weight: 700;">
-          🔑 Login Kasir Demo
+          🔑 Login Petugas Demo
         </button>
       `;
     }
@@ -357,19 +410,30 @@ function handleLoginSubmit(e) {
   const user = (document.getElementById('login-username').value || '').trim();
   const pass = (document.getElementById('login-password').value || '').trim();
 
-  if (user === DEMO_CONFIG.DEMO_USER && (pass === DEMO_CONFIG.DEMO_PASS || pass === DEMO_CONFIG.DEMO_PASS_ALT || pass === 'admin' || pass === 'demo')) {
+  const validOwnerPass = String((state.settings && state.settings.super_admin_pass) || 'owner123').trim();
+
+  if (user === 'owner' && (pass === validOwnerPass || pass === 'owner123')) {
     localStorage.setItem('ilaundry_demo_cashier_session', 'logged_in');
+    localStorage.setItem('ilaundry_demo_role', 'superadmin');
+    closeLoginModal();
+    checkAdminAuth();
+    showToast('👑 Berhasil masuk sebagai Super Admin (Owner)! Akses penuh aktif.', 'success');
+    switchTab('admin');
+  } else if (user === DEMO_CONFIG.DEMO_USER && (pass === DEMO_CONFIG.DEMO_PASS || pass === DEMO_CONFIG.DEMO_PASS_ALT || pass === 'admin' || pass === 'demo' || pass === '1234')) {
+    localStorage.setItem('ilaundry_demo_cashier_session', 'logged_in');
+    localStorage.setItem('ilaundry_demo_role', 'cashier');
     closeLoginModal();
     checkAdminAuth();
     showToast('✅ Berhasil masuk ke Panel Kasir Demo!', 'success');
     switchTab('admin');
   } else {
-    showToast('⚠️ Username/Password demo salah! Gunakan: admin / demo123', 'error');
+    showToast('⚠️ Username/Password salah! Kasir: admin/1234 | Super Admin: owner/owner123', 'error');
   }
 }
 
 function logoutAdmin() {
   localStorage.removeItem('ilaundry_demo_cashier_session');
+  localStorage.removeItem('ilaundry_demo_role');
   checkAdminAuth();
   showToast('🔒 Akses kasir demo berhasil dikunci.', 'info');
   switchTab('tracking');
@@ -612,6 +676,184 @@ function calculateOrderTotal() {
   return total;
 }
 
+// ============================================
+// AUTOCOMPLETE PELANGGAN (MINIMAL 3 KARAKTER)
+// ============================================
+
+function handleCustomerNameInput(val) {
+  const dropdown = document.getElementById('customer-suggestions');
+  if (!dropdown) return;
+
+  const query = String(val || '').trim().toLowerCase();
+  if (query.length < 3) {
+    dropdown.style.display = 'none';
+    dropdown.innerHTML = '';
+    return;
+  }
+
+  const matches = (state.customers || []).filter(c => 
+    String(c.nama_pelanggan || '').toLowerCase().includes(query)
+  );
+
+  if (matches.length === 0) {
+    dropdown.style.display = 'none';
+    dropdown.innerHTML = '';
+    return;
+  }
+
+  dropdown.innerHTML = matches.slice(0, 6).map(c => `
+    <div class="autocomplete-item" onclick="selectCustomerSuggestion('${c.nama_pelanggan.replace(/'/g, "\\'")}', '${(c.no_whatsapp || '').replace(/'/g, "\\'")}')">
+      <div>
+        <div class="autocomplete-name">👤 ${c.nama_pelanggan}</div>
+        <div class="autocomplete-phone">📱 ${c.no_whatsapp || '-'}</div>
+      </div>
+      <span class="autocomplete-count">${c.total_orders || 1}x order</span>
+    </div>
+  `).join('');
+
+  dropdown.style.display = 'block';
+}
+
+function selectCustomerSuggestion(name, phone) {
+  const nameInput = document.getElementById('order-nama');
+  const waInput = document.getElementById('order-wa');
+  const dropdown = document.getElementById('customer-suggestions');
+
+  if (nameInput) nameInput.value = name;
+  if (waInput) waInput.value = phone;
+  if (dropdown) dropdown.style.display = 'none';
+
+  showToast(`Data pelanggan "${name}" berhasil diisi otomatis!`, 'info');
+}
+
+// Menutup dropdown autocomplete jika user klik di luar area
+document.addEventListener('click', (e) => {
+  const dropdown = document.getElementById('customer-suggestions');
+  const nameInput = document.getElementById('order-nama');
+  if (dropdown && e.target !== nameInput && !dropdown.contains(e.target)) {
+    dropdown.style.display = 'none';
+  }
+});
+
+// ============================================
+// LOGIKA WAKTU & METODE PEMBAYARAN FORM ORDER
+// ============================================
+
+function selectPayTiming(timing) {
+  state.currentOrderPayTiming = timing;
+  const cardLunas = document.getElementById('timing-card-lunas');
+  const cardBelum = document.getElementById('timing-card-belum');
+  const radioLunas = document.getElementById('pay-timing-lunas');
+  const radioBelum = document.getElementById('pay-timing-belum');
+  const payArea = document.getElementById('order-pay-methods-area');
+  const timingBadge = document.getElementById('order-timing-badge');
+
+  if (timing === 'Lunas') {
+    if (cardLunas) cardLunas.classList.add('active');
+    if (cardBelum) cardBelum.classList.remove('active');
+    if (radioLunas) radioLunas.checked = true;
+    if (payArea) payArea.style.display = 'block';
+    if (timingBadge) {
+      timingBadge.textContent = 'Bayar Sekarang (Lunas)';
+      timingBadge.className = 'badge badge-success';
+    }
+  } else {
+    if (cardLunas) cardLunas.classList.remove('active');
+    if (cardBelum) cardBelum.classList.add('active');
+    if (radioBelum) radioBelum.checked = true;
+    if (payArea) payArea.style.display = 'none';
+    if (timingBadge) {
+      timingBadge.textContent = 'Bayar Saat Ambil (Belum Lunas)';
+      timingBadge.className = 'badge badge-warning';
+    }
+  }
+}
+
+function selectPayMethod(method) {
+  state.currentOrderPayMethod = method;
+  ['cash', 'qris', 'transfer'].forEach(m => {
+    const btn = document.getElementById(`pay-btn-${m}`);
+    const box = document.getElementById(`order-${m}-detail-box`);
+    if (btn) {
+      if (m === method.toLowerCase()) btn.classList.add('active');
+      else btn.classList.remove('active');
+    }
+    if (box) {
+      box.style.display = m === method.toLowerCase() ? 'block' : 'none';
+    }
+  });
+
+  const total = calculateOrderTotal();
+  if (method === 'QRIS') {
+    const totalText = document.getElementById('order-qris-total-text');
+    if (totalText) totalText.textContent = formatRupiah(total);
+    refreshQrisDisplay();
+  } else if (method === 'TRANSFER') {
+    refreshBankDisplay();
+  } else if (method === 'CASH') {
+    calculateOrderChange();
+  }
+}
+
+function calculateOrderChange() {
+  const total = calculateOrderTotal();
+  const input = document.getElementById('order-cash-nominal');
+  const preview = document.getElementById('order-change-preview');
+  const statusBadge = document.getElementById('order-change-status');
+  if (!input || !preview) return;
+
+  const cash = Number(input.value) || 0;
+  if (!input.value) {
+    preview.textContent = 'Rp 0';
+    if (statusBadge) {
+      statusBadge.textContent = 'Masukkan Nominal';
+      statusBadge.className = 'badge badge-gray';
+    }
+    return;
+  }
+
+  const change = cash - total;
+  if (change < 0) {
+    preview.textContent = `- ${formatRupiah(Math.abs(change))}`;
+    preview.style.color = '#dc2626';
+    if (statusBadge) {
+      statusBadge.textContent = 'Kurang ' + formatRupiah(Math.abs(change));
+      statusBadge.className = 'badge badge-danger';
+    }
+  } else if (change === 0) {
+    preview.textContent = 'Rp 0';
+    preview.style.color = '#15803d';
+    if (statusBadge) {
+      statusBadge.textContent = 'Uang Pas';
+      statusBadge.className = 'badge badge-success';
+    }
+  } else {
+    preview.textContent = formatRupiah(change);
+    preview.style.color = '#15803d';
+    if (statusBadge) {
+      statusBadge.textContent = 'Kembalian ' + formatRupiah(change);
+      statusBadge.className = 'badge badge-success';
+    }
+  }
+}
+
+function setQuickCash(type) {
+  const total = calculateOrderTotal();
+  const input = document.getElementById('order-cash-nominal');
+  if (!input) return;
+
+  if (type === 'exact') {
+    input.value = total;
+  } else if (typeof type === 'number') {
+    if (type >= total) {
+      input.value = type;
+    } else {
+      input.value = Math.ceil(total / type) * type;
+    }
+  }
+  calculateOrderChange();
+}
+
 function handleCreateOrder(e) {
   e.preventDefault();
   const nama = (document.getElementById('order-nama').value || '').trim();
@@ -635,6 +877,27 @@ function handleCreateOrder(e) {
   const total = qty * Number(service.harga || 0);
   const timestamp = now.toISOString().replace('T', ' ').substring(0, 19);
 
+  const payTiming = state.currentOrderPayTiming || 'Lunas';
+  const payMethod = state.currentOrderPayMethod || 'CASH';
+
+  let nominalBayar = 0;
+  let kembalian = 0;
+
+  if (payTiming === 'Lunas') {
+    if (payMethod === 'CASH') {
+      const cashInputVal = Number(document.getElementById('order-cash-nominal').value) || 0;
+      if (cashInputVal < total) {
+        showToast('Uang tunai yang diterima kurang dari total biaya!', 'error');
+        return;
+      }
+      nominalBayar = cashInputVal;
+      kembalian = cashInputVal - total;
+    } else {
+      nominalBayar = total;
+      kembalian = 0;
+    }
+  }
+
   const newOrder = {
     id_pesanan: newResi,
     timestamp: timestamp,
@@ -644,7 +907,10 @@ function handleCreateOrder(e) {
     jumlah: qty,
     total_biaya: total,
     status_cucian: 'Diterima',
-    status_bayar: 'Belum Lunas',
+    status_bayar: payTiming,
+    metode_bayar: payTiming === 'Lunas' ? payMethod : '-',
+    nominal_bayar: nominalBayar,
+    kembalian: kembalian,
     catatan: catatan
   };
 
@@ -652,12 +918,28 @@ function handleCreateOrder(e) {
   state.orders.unshift(newOrder);
   saveDemoOrders();
 
+  // Update customer database
+  const existingCust = (state.customers || []).find(c => c.nama_pelanggan.toLowerCase() === nama.toLowerCase());
+  if (existingCust) {
+    existingCust.total_orders = (existingCust.total_orders || 1) + 1;
+    if (wa) existingCust.no_whatsapp = wa;
+  } else {
+    state.customers.push({
+      nama_pelanggan: nama,
+      no_whatsapp: wa,
+      total_orders: 1
+    });
+  }
+  localStorage.setItem('ilaundry_demo_customers', JSON.stringify(state.customers));
+
   // Reset form
   document.getElementById('order-form').reset();
+  selectPayTiming('Lunas');
+  selectPayMethod('CASH');
   calculateOrderTotal();
 
   // Tampilkan notifikasi simulasi Fonnte
-  showToast(`✨ [Simulasi Demo] Pesanan ${newResi} berhasil dibuat! Notifikasi WA disimulasikan ke ${wa}.`, 'success');
+  showToast(`✨ [Simulasi Demo] Pesanan ${newResi} berhasil dibuat via ${newOrder.metode_bayar}! Notifikasi WA disimulasikan ke ${wa}.`, 'success');
 
   // Buka nota thermal otomatis
   openReceiptModal(newOrder);
@@ -1013,12 +1295,21 @@ function renderAdminOrdersTable(orders) {
         <td>${order.layanan} <br><small style="color:var(--text-muted);">${order.jumlah}</small></td>
         <td style="font-weight:700;color:var(--primary);">${formatRupiah(order.total_biaya)}</td>
         <td>
-          <button class="badge ${isLunas ? 'badge-success' : 'badge-danger'}" 
-                  style="cursor:pointer;border:none;" 
-                  onclick="updatePaymentStatusQuick('${order.id_pesanan}', '${isLunas ? 'Belum Lunas' : 'Lunas'}')"
-                  title="Klik untuk ubah status pembayaran">
-            ${order.status_bayar || 'Belum Lunas'} 🔄
-          </button>
+          ${isLunas ? `
+            <div>
+              <span class="badge badge-success" style="font-size:0.75rem;">✓ Lunas</span>
+              <small style="display:block; color:var(--text-muted); font-size:0.72rem; margin-top:2px;">${order.metode_bayar || 'CASH'}</small>
+            </div>
+          ` : `
+            <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
+              <span class="badge badge-danger" style="font-size:0.75rem;">Belum Lunas</span>
+              <button class="btn btn-sm" style="background:#10b981; color:#fff; font-size:0.72rem; padding:2px 8px; font-weight:700;" 
+                      onclick="openSettlementModal('${order.id_pesanan}')"
+                      title="Pelunasan pembayaran saat cucian diambil">
+                💰 Pelunasan
+              </button>
+            </div>
+          `}
         </td>
         <td>
           <select style="font-size:0.82rem;padding:4px 6px;border-radius:6px;border:1px solid var(--border);"
@@ -1247,6 +1538,36 @@ function openReceiptModal(order) {
   if (rcpQty) rcpQty.textContent = `${order.jumlah} Unit`;
   if (rcpTotal) rcpTotal.textContent = formatRupiah(order.total_biaya);
   if (rcpPay) rcpPay.textContent = order.status_bayar || 'Belum Lunas';
+  if (rcpPay) rcpPay.style.color = order.status_bayar === 'Lunas' ? '#10b981' : '#dc2626';
+
+  const method = order.metode_bayar || (order.status_bayar === 'Lunas' ? 'CASH' : '-');
+  const elMethod = document.getElementById('rcp-pay-method');
+  const rowMethod = document.getElementById('rcp-row-method');
+  if (elMethod) elMethod.textContent = method;
+  if (rowMethod) rowMethod.style.display = method !== '-' ? 'flex' : 'none';
+
+  const rowCash = document.getElementById('rcp-row-cash');
+  const elCash = document.getElementById('rcp-pay-cash');
+  if (rowCash && elCash) {
+    if (order.nominal_bayar && Number(order.nominal_bayar) > 0) {
+      rowCash.style.display = 'flex';
+      elCash.textContent = formatRupiah(order.nominal_bayar);
+    } else {
+      rowCash.style.display = 'none';
+    }
+  }
+
+  const rowChange = document.getElementById('rcp-row-change');
+  const elChange = document.getElementById('rcp-pay-change');
+  if (rowChange && elChange) {
+    if (order.kembalian !== undefined && Number(order.kembalian) > 0) {
+      rowChange.style.display = 'flex';
+      elChange.textContent = formatRupiah(order.kembalian);
+    } else {
+      rowChange.style.display = 'none';
+    }
+  }
+
   if (rcpNotes) rcpNotes.textContent = order.catatan ? `Catatan: ${order.catatan}` : '';
   if (rcpPhone) rcpPhone.textContent = `WA: ${DEMO_CONFIG.PHONE_CONTACT}`;
 
@@ -1430,6 +1751,380 @@ function executeCsvMigration() {
     repBox.style.color = '#065f46';
     repBox.innerHTML = `<strong>✅ Simulasi Impor CSV Berhasil!</strong><br>Data dari berkas CSV berhasil diproses ke antrean demo.`;
   }
+}
+
+// ============================================
+// MODUL PELUNASAN PEMBAYARAN (SAAT PENGAMBILAN)
+// ============================================
+
+function openSettlementModal(resi) {
+  const order = state.orders.find(o => String(o.id_pesanan).trim() === String(resi).trim());
+  if (!order) {
+    showToast('Data pesanan tidak ditemukan.', 'error');
+    return;
+  }
+
+  state.activeSettlementOrder = order;
+  state.settlementPayMethod = 'CASH';
+
+  document.getElementById('stl-resi').textContent = order.id_pesanan;
+  document.getElementById('stl-nama').textContent = order.nama_pelanggan;
+  document.getElementById('stl-layanan').textContent = `${order.layanan} (${order.jumlah})`;
+  document.getElementById('stl-total').textContent = formatRupiah(order.total_biaya);
+
+  selectStlMethod('CASH');
+  const cashInput = document.getElementById('stl-cash-input');
+  if (cashInput) cashInput.value = '';
+  calculateStlChange();
+
+  const modal = document.getElementById('settlement-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeSettlementModal() {
+  const modal = document.getElementById('settlement-modal');
+  if (modal) modal.style.display = 'none';
+  state.activeSettlementOrder = null;
+}
+
+function selectStlMethod(method) {
+  state.settlementPayMethod = method;
+  ['cash', 'qris', 'transfer'].forEach(m => {
+    const btn = document.getElementById(`stl-method-${m}`);
+    const box = document.getElementById(`stl-${m}-box`);
+    if (btn) {
+      if (m === method.toLowerCase()) btn.classList.add('active');
+      else btn.classList.remove('active');
+    }
+    if (box) {
+      box.style.display = m === method.toLowerCase() ? 'block' : 'none';
+    }
+  });
+
+  const order = state.activeSettlementOrder;
+  if (!order) return;
+
+  if (method === 'QRIS') {
+    const qrisNominal = document.getElementById('stl-qris-nominal');
+    if (qrisNominal) qrisNominal.textContent = formatRupiah(order.total_biaya);
+    const qrisImg = document.getElementById('stl-qris-img');
+    const qrisUrl = state.settings.qris_image_url || `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent('iLaundry Pro Pelunasan ' + order.id_pesanan + ' Rp ' + order.total_biaya)}`;
+    if (qrisImg) qrisImg.src = qrisUrl;
+  } else if (method === 'TRANSFER') {
+    const bName = document.getElementById('stl-bank-name');
+    const bAcc = document.getElementById('stl-bank-acc');
+    const bHolder = document.getElementById('stl-bank-holder');
+    if (bName) bName.textContent = `BANK ${state.settings.bank_name || 'BCA'}`;
+    if (bAcc) bAcc.textContent = state.settings.bank_account_number || '1234567890';
+    if (bHolder) bHolder.textContent = `a.n. ${state.settings.bank_account_holder || 'iLaundry Pro by RASH'}`;
+  } else if (method === 'CASH') {
+    calculateStlChange();
+  }
+}
+
+function calculateStlChange() {
+  const order = state.activeSettlementOrder;
+  if (!order) return;
+
+  const total = Number(order.total_biaya) || 0;
+  const input = document.getElementById('stl-cash-input');
+  const preview = document.getElementById('stl-change-preview');
+  const badge = document.getElementById('stl-change-status');
+  if (!input || !preview) return;
+
+  const cash = Number(input.value) || 0;
+  if (!input.value) {
+    preview.textContent = 'Rp 0';
+    if (badge) {
+      badge.textContent = 'Masukkan Nominal';
+      badge.className = 'badge badge-gray';
+    }
+    return;
+  }
+
+  const change = cash - total;
+  if (change < 0) {
+    preview.textContent = `- ${formatRupiah(Math.abs(change))}`;
+    preview.style.color = '#dc2626';
+    if (badge) {
+      badge.textContent = 'Kurang ' + formatRupiah(Math.abs(change));
+      badge.className = 'badge badge-danger';
+    }
+  } else if (change === 0) {
+    preview.textContent = 'Rp 0';
+    preview.style.color = '#15803d';
+    if (badge) {
+      badge.textContent = 'Uang Pas';
+      badge.className = 'badge badge-success';
+    }
+  } else {
+    preview.textContent = formatRupiah(change);
+    preview.style.color = '#15803d';
+    if (badge) {
+      badge.textContent = 'Kembalian ' + formatRupiah(change);
+      badge.className = 'badge badge-success';
+    }
+  }
+}
+
+function setStlQuickCash(type) {
+  const order = state.activeSettlementOrder;
+  if (!order) return;
+
+  const total = Number(order.total_biaya) || 0;
+  const input = document.getElementById('stl-cash-input');
+  if (!input) return;
+
+  if (type === 'exact') {
+    input.value = total;
+  } else if (typeof type === 'number') {
+    if (type >= total) {
+      input.value = type;
+    } else {
+      input.value = Math.ceil(total / type) * type;
+    }
+  }
+  calculateStlChange();
+}
+
+function submitSettlementPayment() {
+  const order = state.activeSettlementOrder;
+  if (!order) return;
+
+  const total = Number(order.total_biaya) || 0;
+  const method = state.settlementPayMethod;
+  let cashReceived = total;
+  let change = 0;
+
+  if (method === 'CASH') {
+    const inputVal = Number(document.getElementById('stl-cash-input').value) || 0;
+    if (inputVal < total) {
+      showToast('Nominal tunai yang diterima kurang dari total tagihan!', 'error');
+      return;
+    }
+    cashReceived = inputVal;
+    change = cashReceived - total;
+  }
+
+  const newStatusCucian = document.getElementById('stl-status-cucian').value;
+
+  order.status_bayar = 'Lunas';
+  order.metode_bayar = method;
+  order.nominal_bayar = cashReceived;
+  order.kembalian = change;
+  if (newStatusCucian) order.status_cucian = newStatusCucian;
+
+  saveDemoOrders();
+  closeSettlementModal();
+  renderAdminOrdersTable(state.orders);
+  renderDailySales();
+  updateAdminStats(state.orders);
+
+  showToast(`✅ [Demo] Pelunasan ${order.id_pesanan} berhasil via ${method}!`, 'success');
+  openReceiptModal(order);
+}
+
+// ============================================
+// MODUL PENGATURAN SUPER ADMIN (OWNER SELF-SERVICE)
+// ============================================
+
+function openSuperAdminModal() {
+  if (!isSuperAdmin()) {
+    showToast('Akses terbatas hanya untuk Super Admin (Owner).', 'error');
+    return;
+  }
+
+  const s = state.settings || {};
+  document.getElementById('sa-cs-phone').value = s.cs_phone || '08982485685';
+  document.getElementById('sa-store-name').value = s.store_name || 'iLaundry Pro by RASH';
+
+  const fonnteToggle = document.getElementById('sa-fonnte-toggle');
+  const fonnteLabel = document.getElementById('sa-fonnte-toggle-label');
+  const isFonnteOn = s.fonnte_active !== false && s.fonnte_active !== 'false';
+  if (fonnteToggle) fonnteToggle.checked = isFonnteOn;
+  if (fonnteLabel) fonnteLabel.textContent = isFonnteOn ? 'Aktif' : 'Nonaktif';
+
+  if (fonnteToggle) {
+    fonnteToggle.onchange = (e) => {
+      if (fonnteLabel) fonnteLabel.textContent = e.target.checked ? 'Aktif' : 'Nonaktif';
+    };
+  }
+
+  document.getElementById('sa-fonnte-token').value = s.fonnte_token || 'FbknoZ6kJ16R7BZGgJap';
+  document.getElementById('sa-qris-merchant').value = s.qris_merchant_name || 'iLaundry Pro by RASH';
+  document.getElementById('sa-qris-url').value = s.qris_image_url || '';
+  previewSaQris(s.qris_image_url || '');
+
+  document.getElementById('sa-bank-name').value = s.bank_name || 'BCA';
+  document.getElementById('sa-bank-number').value = s.bank_account_number || '1234567890';
+  document.getElementById('sa-bank-holder').value = s.bank_account_holder || 'iLaundry Pro by RASH';
+  document.getElementById('sa-admin-pass').value = '';
+
+  renderSuperAdminPricingTable();
+  switchSuperAdminTab('general');
+
+  const modal = document.getElementById('super-admin-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeSuperAdminModal() {
+  const modal = document.getElementById('super-admin-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function switchSuperAdminTab(tabName) {
+  ['general', 'pricing', 'wa', 'qris', 'security'].forEach(t => {
+    const btn = document.getElementById(`sa-tab-btn-${t}`);
+    const sec = document.getElementById(`sa-tab-${t}`);
+    if (btn) {
+      if (t === tabName) btn.classList.add('active');
+      else btn.classList.remove('active');
+    }
+    if (sec) {
+      sec.style.display = t === tabName ? 'block' : 'none';
+    }
+  });
+}
+
+function previewSaQris(url) {
+  const box = document.getElementById('sa-qris-preview-box');
+  const img = document.getElementById('sa-qris-preview-img');
+  if (!box || !img) return;
+
+  if (url && url.trim().length > 5) {
+    img.src = url.trim();
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+function renderSuperAdminPricingTable() {
+  const tbody = document.getElementById('sa-pricing-table-tbody');
+  if (!tbody) return;
+
+  if (state.services.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Belum ada data layanan.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = state.services.map(srv => `
+    <tr>
+      <td><strong>${srv.nama_layanan}</strong></td>
+      <td><span class="badge ${srv.jenis === 'Kiloan' ? 'badge-primary' : 'badge-warning'}">${srv.jenis}</span></td>
+      <td><strong>${formatRupiah(srv.harga)}</strong></td>
+      <td>/${srv.satuan}</td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="promptQuickEditPrice('${srv.id || ''}', '${srv.nama_layanan.replace(/'/g, "\\'")}', ${srv.harga})">
+          ✏️ Ubah Harga
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function promptQuickEditPrice(id, name, currentPrice) {
+  const newPrice = prompt(`Ubah harga untuk "${name}":\n(Masukkan tarif baru angka saja)`, currentPrice);
+  if (newPrice === null) return;
+
+  const num = Number(newPrice.replace(/[^0-9]/g, ''));
+  if (isNaN(num) || num <= 0) {
+    showToast('Harga harus berupa angka valid di atas 0.', 'error');
+    return;
+  }
+
+  const srvObj = state.services.find(s => s.id === id || s.nama_layanan === name);
+  if (srvObj) {
+    srvObj.harga = num;
+    saveDemoServices();
+    renderCatalog();
+    renderSimulationDropdown();
+    renderOrderServiceDropdown();
+    renderSuperAdminPricingTable();
+    showToast(`✅ Tarif "${name}" diperbarui menjadi ${formatRupiah(num)}!`, 'success');
+  }
+}
+
+function saveSuperAdminSettings() {
+  const csPhone = document.getElementById('sa-cs-phone').value.trim();
+  const storeName = document.getElementById('sa-store-name').value.trim();
+  const fonnteActive = document.getElementById('sa-fonnte-toggle').checked;
+  const fonnteToken = document.getElementById('sa-fonnte-token').value.trim();
+  const qrisMerchant = document.getElementById('sa-qris-merchant').value.trim();
+  const qrisUrl = document.getElementById('sa-qris-url').value.trim();
+  const bankName = document.getElementById('sa-bank-name').value.trim();
+  const bankNumber = document.getElementById('sa-bank-number').value.trim();
+  const bankHolder = document.getElementById('sa-bank-holder').value.trim();
+  const newPass = document.getElementById('sa-admin-pass').value.trim();
+
+  const updates = {
+    cs_phone: csPhone,
+    store_name: storeName,
+    fonnte_active: fonnteActive,
+    fonnte_token: fonnteToken,
+    qris_merchant_name: qrisMerchant,
+    qris_image_url: qrisUrl,
+    bank_name: bankName,
+    bank_account_number: bankNumber,
+    bank_account_holder: bankHolder
+  };
+
+  if (newPass) {
+    updates.super_admin_pass = newPass;
+  }
+
+  state.settings = { ...state.settings, ...updates };
+  localStorage.setItem('ilaundry_demo_settings', JSON.stringify(state.settings));
+  applyStoreSettings(state.settings);
+
+  showToast('✅ [Demo] Semua pengaturan toko & harga berhasil disimpan ke database!', 'success');
+  closeSuperAdminModal();
+}
+
+function applyStoreSettings(s) {
+  if (!s) return;
+  if (s.cs_phone) {
+    DEMO_CONFIG.PHONE_CONTACT = s.cs_phone;
+    document.querySelectorAll('.cs-phone-display').forEach(el => el.textContent = s.cs_phone);
+    const rcpPhone = document.getElementById('rcp-cs-phone');
+    if (rcpPhone) rcpPhone.textContent = `WA: ${s.cs_phone}`;
+  }
+
+  refreshQrisDisplay();
+  refreshBankDisplay();
+}
+
+function refreshQrisDisplay() {
+  const s = state.settings || {};
+  const merchantEl = document.getElementById('order-qris-merchant');
+  if (merchantEl) merchantEl.textContent = s.qris_merchant_name || 'iLaundry Pro by RASH';
+
+  const imgEl = document.getElementById('order-qris-img');
+  if (imgEl) {
+    const qrisUrl = s.qris_image_url || `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent('iLaundry Pro - ' + (s.qris_merchant_name || 'RASH'))}`;
+    imgEl.src = qrisUrl;
+  }
+}
+
+function refreshBankDisplay() {
+  const s = state.settings || {};
+  const nameEl = document.getElementById('order-bank-name');
+  const accEl = document.getElementById('order-bank-acc');
+  const holderEl = document.getElementById('order-bank-holder');
+
+  if (nameEl) nameEl.textContent = `BANK ${s.bank_name || 'BCA'}`;
+  if (accEl) accEl.textContent = s.bank_account_number || '1234567890';
+  if (holderEl) holderEl.textContent = `a.n. ${s.bank_account_holder || 'iLaundry Pro by RASH'}`;
+}
+
+function copyBankAcc() {
+  const s = state.settings || {};
+  const acc = s.bank_account_number || '1234567890';
+  navigator.clipboard.writeText(acc).then(() => {
+    showToast(`Nomor rekening ${acc} berhasil disalin!`, 'success');
+  }).catch(() => {
+    showToast(`Nomor rekening: ${acc}`, 'info');
+  });
 }
 
 function loadAllOrders() {

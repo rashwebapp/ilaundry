@@ -1096,3 +1096,229 @@ body {
     line-height: 1;
   }
 }
+
+/* =========================================================================
+   AUTOCOMPLETE PELANGGAN (MINIMAL 3 KARAKTER)
+   ========================================================================= */
+
+.autocomplete-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 1050;
+  display: none;
+}
+
+.autocomplete-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-item:hover, .autocomplete-item.active {
+  background: var(--primary-soft);
+}
+
+.autocomplete-name {
+  font-weight: 700;
+  color: var(--dark);
+  font-size: 0.92rem;
+}
+
+.autocomplete-phone {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.autocomplete-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+/* =========================================================================
+   PILIHAN METODE & WAKTU PEMBAYARAN (CASH, QRIS, TRANSFER)
+   ========================================================================= */
+
+.pay-timing-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.pay-timing-card {
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.pay-timing-card:hover {
+  border-color: #93c5fd;
+}
+
+.pay-timing-card.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.pay-timing-card input[type="radio"] {
+  accent-color: var(--primary);
+  transform: scale(1.15);
+}
+
+.pay-methods-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.pay-method-btn {
+  background: #ffffff;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.pay-method-btn:hover {
+  border-color: #93c5fd;
+  transform: translateY(-2px);
+}
+
+.pay-method-btn.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 800;
+  box-shadow: 0 4px 12px -2px rgba(2, 132, 199, 0.25);
+}
+
+.pay-method-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.pay-method-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.quick-cash-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.quick-cash-btn {
+  background: #f1f5f9;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--dark);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quick-cash-btn:hover {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.change-calc-box {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  margin-bottom: 14px;
+}
+
+.change-amount {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #15803d;
+}
+
+.badge-owner {
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  color: #ffffff;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.25);
+}
+
+.super-admin-nav-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+  margin-bottom: 18px;
+}
+
+.super-admin-nav-tabs button {
+  background: none;
+  border: none;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.super-admin-nav-tabs button.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
