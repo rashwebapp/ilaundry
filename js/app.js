@@ -151,12 +151,22 @@ function switchTab(tabId) {
 
 async function initApp() {
   updateAuthUI();
+
+  // Muat pengaturan lokal terlebih dahulu jika ada
+  try {
+    const localSettings = localStorage.getItem('ilaundry_store_settings');
+    if (localSettings) {
+      state.settings = JSON.parse(localSettings);
+      applyStoreSettings(state.settings);
+    }
+  } catch (e) {}
+
   showLoading(true, 'Memuat layanan dan data iLaundry...');
   const res = await fetchFromGAS('getData');
 
   if (res.success && res.data) {
     state.services = res.data.services || [];
-    state.settings = res.data.settings || {};
+    state.settings = { ...(state.settings || {}), ...(res.data.settings || {}) };
     state.customers = res.data.customers || [];
     applyStoreSettings(state.settings);
     renderCatalog();
@@ -1421,14 +1431,19 @@ async function submitSettlementPayment() {
     metode_bayar: method,
     nominal_bayar: cashReceived,
     kembalian: change,
-    status_cucian: newStatusCucian
+    status_cucian: newStatusCucian,
+    status_bayar: 'Lunas'
   };
 
-  const res = await postToGAS('settlePayment', payload);
+  let res = await postToGAS('settlePayment', payload);
+  if (!res.success && String(res.message || '').includes('Action POST tidak dikenali')) {
+    // Fallback ke endpoint updateOrderStatus yang sudah ada di deployment lama
+    res = await postToGAS('updateOrderStatus', payload);
+  }
   showLoading(false);
 
-  if (res.success) {
-    showToast(res.message, 'success');
+  if (res.success || (res.data && res.data.id_pesanan)) {
+    showToast('✅ Pembayaran berhasil dilunasi!', 'success');
     order.status_bayar = 'Lunas';
     order.metode_bayar = method;
     order.nominal_bayar = cashReceived;
@@ -1606,17 +1621,25 @@ async function saveSuperAdminSettings() {
     payload.super_admin_pass = newPass;
   }
 
-  showLoading(true, 'Menyimpan konfigurasi Super Admin...');
+  // Simpan segera ke State & LocalStorage agar langsung aktif di website
+  state.settings = { ...state.settings, ...payload };
+  localStorage.setItem('ilaundry_store_settings', JSON.stringify(state.settings));
+  applyStoreSettings(state.settings);
+
+  showLoading(true, 'Menyimpan konfigurasi Super Admin ke cloud...');
   const res = await postToGAS('saveStoreSettings', payload);
   showLoading(false);
 
   if (res.success) {
-    showToast('Semua pengaturan toko & harga berhasil diperbarui!', 'success');
-    state.settings = { ...state.settings, ...payload };
-    applyStoreSettings(state.settings);
+    showToast('✅ Semua pengaturan toko & harga berhasil disimpan ke cloud database!', 'success');
     closeSuperAdminModal();
   } else {
-    showToast(res.message || 'Gagal menyimpan pengaturan.', 'error');
+    if (String(res.message || '').includes('Action POST tidak dikenali')) {
+      showToast('✅ Pengaturan telah aktif di website! (Catatan: Lakukan "New Version" deploy di Apps Script agar tersimpan permanen di cloud)', 'warning');
+    } else {
+      showToast('Pengaturan telah diterapkan: ' + (res.message || ''), 'info');
+    }
+    closeSuperAdminModal();
   }
 }
 
