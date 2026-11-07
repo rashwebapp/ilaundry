@@ -276,107 +276,117 @@
 
     <!-- VIEW 4: PANEL KASIR & KELOLA LAYANAN -->
     <section id="view-admin" class="view-section">
-      <!-- Sub-Navigasi Panel Kasir -->
-      <div style="display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap;">
-        <button id="sub-nav-orders" class="btn btn-primary" onclick="switchAdminSubView('orders')">
-          📋 Antrean Transaksi
+      <!-- Sub-Navigasi Panel Kasir Modern RASH Mitra -->
+      <div class="pos-subnav-dock">
+        <button id="sub-nav-orders" class="pos-subnav-btn active" onclick="switchAdminSubView('orders')">
+          📋 1. Antrean Transaksi
         </button>
-        <button id="sub-nav-daily" class="btn btn-secondary" onclick="switchAdminSubView('daily')">
-          📅 Penjualan Harian
+        <button id="sub-nav-daily" class="pos-subnav-btn" onclick="switchAdminSubView('daily')">
+          📅 2. Penjualan Harian
         </button>
-        <button id="sub-nav-recap" class="btn btn-secondary" onclick="switchAdminSubView('recap')">
-          📊 Rekap Bulanan & Layanan Terlaris
+        <button id="sub-nav-recap" class="pos-subnav-btn" onclick="switchAdminSubView('recap')">
+          📊 3. Rekap Bulanan & Omset
         </button>
       </div>
 
       <!-- SUB-VIEW 1: ANTREAN TRANSAKSI -->
       <div id="admin-sub-orders">
-        <!-- Quick Actions Banner (Aksi Cepat Kasir) -->
-        <div class="quick-actions-bar card" style="padding: 14px 20px; margin-bottom: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="width: 42px; height: 42px; background: #ffffff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; box-shadow: 0 4px 10px rgba(2,132,199,0.15); flex-shrink: 0;">⚡</div>
-              <div>
-                <strong style="color: #0369a1; font-size: 0.98rem; display: block;">Aksi Cepat Kasir</strong>
-                <p style="font-size: 0.8rem; color: #0284c7; margin: 0;">Pintasan input pesanan dan pengecekan rekap kasir dalam 1 klik</p>
+        <!-- Header & Action Toolbar Kasir Modern RASH Mitra -->
+        <div class="pos-toolbar-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h2 style="font-size: 1.25rem; font-weight: 800; color: var(--dark); margin: 0;">Panel Kasir POS & Antrean Laundry</h2>
+                <span class="badge badge-primary" style="font-size: 0.72rem; padding: 3px 8px;">LIVE</span>
               </div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin: 4px 0 0 0;">
+                Kelola status cucian, pembayaran lunas/tempo, cetak struk thermal 58mm, dan notifikasi WhatsApp realtime.
+              </p>
             </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button class="btn btn-primary btn-sm" onclick="switchTab('order')" style="box-shadow: 0 4px 10px rgba(2, 132, 199, 0.35);">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <button class="btn btn-primary btn-sm" onclick="switchTab('order')" style="box-shadow: 0 4px 12px -2px rgba(2, 132, 199, 0.4); font-weight: 700; padding: 8px 16px;">
                 ➕ Order Baru
               </button>
-              <button class="btn btn-secondary btn-sm" onclick="switchAdminSubView('daily')">
-                📅 Cek Penjualan Hari Ini
+              <button class="btn btn-secondary btn-sm" onclick="openServicesModal()" title="Katalog Layanan & Tarif">
+                ⚙️ Layanan
               </button>
-              <button class="btn btn-secondary btn-sm" onclick="switchAdminSubView('recap')">
-                📊 Rekap Bulanan
+              <button id="btn-superadmin-panel" class="btn btn-secondary btn-sm" onclick="openSuperAdminModal()" style="display: none; background: #fff7ed; border-color: #fdba74; color: #c2410c; font-weight: 700;" title="Panel Khusus Super Admin">
+                👑 Super Admin
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="loadAllOrders()" title="Muat ulang data dari server">
+                🔄 Refresh
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="openImportModal()" title="Import database spreadsheet lama">
+                📥 Import
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="logoutAdmin()" title="Kunci Akses Panel Kasir">
+                🔒 Kunci
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Admin Stats Grid -->
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-label">Total Pesanan</div>
-            <div id="stat-total" class="stat-value">0</div>
+        <!-- Admin Stats Grid ala RASH Mitra (Clean High-Contrast Cards) -->
+        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 20px;">
+          <div class="stat-card" style="display: flex; align-items: center; gap: 14px; padding: 18px 20px;">
+            <div class="stat-icon-wrapper" style="background: #eff6ff; color: #2563eb;">📋</div>
+            <div>
+              <div class="stat-label">Total Pesanan</div>
+              <div id="stat-total" class="stat-value">0</div>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label">Sedang Diproses</div>
-            <div id="stat-active" class="stat-value" style="color: var(--primary);">0</div>
+
+          <div class="stat-card" style="display: flex; align-items: center; gap: 14px; padding: 18px 20px;">
+            <div class="stat-icon-wrapper" style="background: #fef3c7; color: #d97706;">🧺</div>
+            <div>
+              <div class="stat-label">Sedang Diproses</div>
+              <div id="stat-active" class="stat-value" style="color: #d97706;">0</div>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label">Siap Diambil</div>
-            <div id="stat-ready" class="stat-value" style="color: var(--accent);">0</div>
+
+          <div class="stat-card" style="display: flex; align-items: center; gap: 14px; padding: 18px 20px;">
+            <div class="stat-icon-wrapper" style="background: #ecfdf5; color: #059669;">📦</div>
+            <div>
+              <div class="stat-label">Siap Diambil</div>
+              <div id="stat-ready" class="stat-value" style="color: #059669;">0</div>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label">Total Omset</div>
-            <div id="stat-revenue" class="stat-value" style="font-size: 1.35rem;">Rp 0</div>
+
+          <div class="stat-card" style="display: flex; align-items: center; gap: 14px; padding: 18px 20px;">
+            <div class="stat-icon-wrapper" style="background: #f0fdf4; color: #16a34a;">💰</div>
+            <div>
+              <div class="stat-label">Total Omset</div>
+              <div id="stat-revenue" class="stat-value" style="color: #2563eb; font-size: 1.35rem;">Rp 0</div>
+            </div>
           </div>
         </div>
 
-        <!-- Action & Filter Bar -->
-        <div class="card" style="padding: 16px 20px; margin-bottom: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button class="btn btn-primary btn-sm" onclick="switchTab('order')">
-                ➕ Order Baru
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="openServicesModal()">
-                ⚙️ Kelola Produk & Jasa
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="loadAllOrders()">
-                🔄 Refresh Data
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="openImportModal()">
-                📥 Import Data Lama
-              </button>
-              <button id="btn-superadmin-panel" class="btn btn-secondary btn-sm" onclick="openSuperAdminModal()" style="display: none; background: #fff7ed; border-color: #fdba74; color: #c2410c; font-weight: 700;">
-                👑 Pengaturan Toko & Harga
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="logoutAdmin()" title="Kunci Akses Kasir">
-                🔒 Kunci Kasir
-              </button>
+        <!-- Orders Table Card with Filter ala RASH Mitra -->
+        <div class="card" style="padding: 0; overflow: hidden; border-radius: 16px;">
+          <div style="padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; background: #ffffff;">
+            <div>
+              <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--dark); margin: 0;">Antrean Pengerjaan & Pembayaran</h3>
+              <p style="font-size: 0.78rem; color: var(--text-muted); margin: 2px 0 0 0;">Daftar cucian aktif dan riwayat serah terima nota</p>
             </div>
-            <div style="display: flex; gap: 8px; align-items: center;">
-              <input type="text" id="admin-search-input" placeholder="Cari pelanggan / resi..." oninput="filterAdminOrders()" style="padding: 7px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 0.88rem;">
-              <select id="admin-status-filter" onchange="filterAdminOrders()" style="padding: 7px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 0.88rem;">
-                <option value="ALL">Semua Status</option>
-                <option value="Diterima">Diterima</option>
-                <option value="Dicuci">Dicuci</option>
-                <option value="Dikeringkan">Dikeringkan</option>
-                <option value="Disetrika">Disetrika</option>
-                <option value="Siap Diambil">Siap Diambil</option>
-                <option value="Selesai">Selesai</option>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <input type="text" id="admin-search-input" class="pos-search-input" placeholder="🔍 Cari nama, resi, no WA..." oninput="filterAdminOrders()" style="width: 210px;">
+              <select id="admin-status-filter" class="pos-select-filter" onchange="filterAdminOrders()">
+                <option value="ALL">Semua Pengerjaan</option>
+                <option value="Diterima">1. Diterima</option>
+                <option value="Dicuci">2. Dicuci</option>
+                <option value="Dikeringkan">3. Dikeringkan</option>
+                <option value="Disetrika">4. Disetrika</option>
+                <option value="Siap Diambil">5. Siap Diambil</option>
+                <option value="Selesai">6. Selesai</option>
+              </select>
+              <select id="admin-pay-filter" class="pos-select-filter" onchange="filterAdminOrders()">
+                <option value="ALL">Semua Pembayaran</option>
+                <option value="BELUM_LUNAS">⏳ Belum Lunas</option>
+                <option value="LUNAS">✓ Lunas</option>
               </select>
             </div>
           </div>
-        </div>
-
-        <!-- Orders Table -->
-        <div class="card">
-          <h3 class="card-title" style="margin-bottom: 15px;">Daftar Transaksi Antrean Laundry</h3>
-          <div class="table-responsive">
+          <div class="table-responsive" style="border: none; border-radius: 0;">
             <table class="data-table">
               <thead>
                 <tr>
@@ -384,10 +394,10 @@
                   <th>Tanggal</th>
                   <th>Pelanggan</th>
                   <th>Layanan & Qty</th>
-                  <th>Total</th>
+                  <th>Total Biaya</th>
                   <th>Pembayaran</th>
-                  <th>Status Pengerjaan</th>
-                  <th>Aksi</th>
+                  <th>Status Cucian</th>
+                  <th style="text-align: center;">Aksi Struk & WA</th>
                 </tr>
               </thead>
               <tbody id="admin-orders-tbody">

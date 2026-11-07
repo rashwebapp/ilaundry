@@ -777,53 +777,60 @@ function renderAdminOrdersTable(orders) {
   }
 
   tbody.innerHTML = orders.map(order => {
-    const isLunas = order.status_bayar === 'Lunas';
-    const nextPayStatus = isLunas ? 'Belum Lunas' : 'Lunas';
+    const isLunas = String(order.status_bayar || '').toLowerCase() === 'lunas';
+    const cleanDate = order.timestamp ? String(order.timestamp).split(' ')[0] : '-';
 
     return `
       <tr>
-        <td><strong>${order.id_pesanan}</strong></td>
-        <td><small style="color:var(--text-muted);">${order.timestamp ? String(order.timestamp).split(' ')[0] : '-'}</small></td>
         <td>
-          <div style="font-weight:700;">${order.nama_pelanggan}</div>
-          <small style="color:var(--text-muted);">${order.no_whatsapp || '-'}</small>
+          <span class="badge-resi">
+            ${order.id_pesanan}
+          </span>
         </td>
         <td>
-          <div>${order.layanan}</div>
-          <small class="badge badge-gray">${order.jumlah}</small>
+          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">${cleanDate}</span>
         </td>
-        <td><strong>${formatRupiah(order.total_biaya)}</strong></td>
+        <td>
+          <strong style="color:var(--dark); font-size:0.92rem; display:block;">${order.nama_pelanggan}</strong>
+          <small style="color:var(--text-muted); font-size:0.78rem;">📱 ${order.no_whatsapp || '-'}</small>
+        </td>
+        <td>
+          <div style="font-weight:600; font-size:0.88rem; color:var(--dark);">${order.layanan}</div>
+          <span class="badge ${order.layanan.toLowerCase().includes('kilo') ? 'badge-primary' : 'badge-warning'}" style="font-size:0.7rem; margin-top:2px;">
+            ${order.jumlah}
+          </span>
+        </td>
+        <td>
+          <strong style="font-size:0.98rem; color:var(--primary);">${formatRupiah(order.total_biaya)}</strong>
+        </td>
         <td>
           ${isLunas ? `
             <div>
-              <span class="badge badge-success" style="font-size:0.75rem;">✓ Lunas</span>
-              <small style="display:block; color:var(--text-muted); font-size:0.72rem; margin-top:2px;">${order.metode_bayar || 'CASH'}</small>
+              <span class="badge-lunas">✓ Lunas</span>
+              <small style="display:block; color:var(--text-muted); font-size:0.72rem; margin-top:3px; font-weight:600;">via ${order.metode_bayar || 'CASH'}</small>
             </div>
           ` : `
             <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
-              <span class="badge badge-danger" style="font-size:0.75rem;">Belum Lunas</span>
-              <button class="btn btn-sm" style="background:#10b981; color:#fff; font-size:0.72rem; padding:2px 8px; font-weight:700;" 
-                      onclick="openSettlementModal('${order.id_pesanan}')"
-                      title="Pelunasan pembayaran saat cucian diambil">
+              <span class="badge-belum-lunas">Belum Lunas</span>
+              <button class="btn-pelunasan" onclick="openSettlementModal('${order.id_pesanan}')" title="Pelunasan pembayaran cucian">
                 💰 Pelunasan
               </button>
             </div>
           `}
         </td>
         <td>
-          <select style="padding: 5px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); font-size: 0.82rem;"
-                  onchange="handleUpdateStatus('${order.id_pesanan}', this.value, null)">
+          <select class="status-cucian-select" onchange="handleUpdateStatus('${order.id_pesanan}', this.value, null)">
             ${STATUS_STEPS.map(st => `
               <option value="${st}" ${order.status_cucian === st ? 'selected' : ''}>${st}</option>
             `).join('')}
           </select>
         </td>
         <td>
-          <div style="display:flex;gap:4px;">
-            <button class="btn btn-primary btn-sm" onclick="openReceiptModalByResi('${order.id_pesanan}')" title="Cetak Struk Thermal">
+          <div style="display:flex; gap:5px; align-items:center;">
+            <button class="btn-tbl-struk" onclick="openReceiptModalByResi('${order.id_pesanan}')" title="Cetak Struk Thermal 58mm">
               🖨️ Struk
             </button>
-            <button class="btn btn-secondary btn-sm" onclick="sendWhatsAppReceipt('${order.id_pesanan}')" title="Kirim Nota via WA">
+            <button class="btn-tbl-wa" onclick="sendWhatsAppReceipt('${order.id_pesanan}')" title="Kirim Nota via WA">
               📲 WA
             </button>
           </div>
@@ -834,8 +841,9 @@ function renderAdminOrdersTable(orders) {
 }
 
 function filterAdminOrders() {
-  const search = (document.getElementById('admin-search-input').value || '').toLowerCase();
-  const status = document.getElementById('admin-status-filter').value;
+  const search = (document.getElementById('admin-search-input')?.value || '').toLowerCase().trim();
+  const status = document.getElementById('admin-status-filter')?.value || 'ALL';
+  const payFilter = document.getElementById('admin-pay-filter')?.value || 'ALL';
 
   const filtered = state.orders.filter(order => {
     const matchSearch = String(order.nama_pelanggan || '').toLowerCase().includes(search) ||
@@ -843,7 +851,10 @@ function filterAdminOrders() {
                         String(order.no_whatsapp || '').includes(search);
 
     const matchStatus = status === 'ALL' || order.status_cucian === status;
-    return matchSearch && matchStatus;
+    const isLunas = String(order.status_bayar || '').toLowerCase() === 'lunas';
+    const matchPay = payFilter === 'ALL' || (payFilter === 'LUNAS' ? isLunas : !isLunas);
+
+    return matchSearch && matchStatus && matchPay;
   });
 
   renderAdminOrdersTable(filtered);
@@ -1933,24 +1944,24 @@ function switchAdminSubView(subView) {
   const areaDaily = document.getElementById('admin-sub-daily');
   const areaRecap = document.getElementById('admin-sub-recap');
 
-  if (btnOrders) btnOrders.className = 'btn btn-secondary';
-  if (btnDaily) btnDaily.className = 'btn btn-secondary';
-  if (btnRecap) btnRecap.className = 'btn btn-secondary';
+  if (btnOrders) btnOrders.className = 'pos-subnav-btn';
+  if (btnDaily) btnDaily.className = 'pos-subnav-btn';
+  if (btnRecap) btnRecap.className = 'pos-subnav-btn';
 
   if (areaOrders) areaOrders.style.display = 'none';
   if (areaDaily) areaDaily.style.display = 'none';
   if (areaRecap) areaRecap.style.display = 'none';
 
   if (subView === 'orders') {
-    if (btnOrders) btnOrders.className = 'btn btn-primary';
+    if (btnOrders) btnOrders.className = 'pos-subnav-btn active';
     if (areaOrders) areaOrders.style.display = 'block';
   } else if (subView === 'daily') {
-    if (btnDaily) btnDaily.className = 'btn btn-primary';
+    if (btnDaily) btnDaily.className = 'pos-subnav-btn active';
     if (areaDaily) areaDaily.style.display = 'block';
     initDailyDatePicker();
     renderDailySales();
   } else if (subView === 'recap') {
-    if (btnRecap) btnRecap.className = 'btn btn-primary';
+    if (btnRecap) btnRecap.className = 'pos-subnav-btn active';
     if (areaRecap) areaRecap.style.display = 'block';
     populateRecapYearDropdown();
     renderMonthlyRecap();
@@ -2127,36 +2138,51 @@ function renderDailySales() {
 
       rowsHtml += `
         <tr>
-          <td><strong>${o.id_pesanan}</strong></td>
-          <td style="font-size: 0.85rem; white-space: nowrap;">
-            <span style="background: var(--bg-page); padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border); font-weight: 600;">
+          <td>
+            <span class="badge-resi">
+              ${o.id_pesanan}
+            </span>
+          </td>
+          <td>
+            <span style="font-size:0.8rem; color:var(--text-muted); font-weight:600; display:inline-flex; align-items:center; gap:4px;">
               ⏰ ${timeStr}
             </span>
           </td>
           <td>
-            <div style="font-weight: 700;">${o.nama_pelanggan}</div>
-            <div style="font-size: 0.8rem; color: var(--text-muted);">${o.no_whatsapp || '-'}</div>
+            <strong style="color:var(--dark); font-size:0.92rem; display:block;">${o.nama_pelanggan}</strong>
+            <small style="color:var(--text-muted); font-size:0.78rem;">📱 ${o.no_whatsapp || '-'}</small>
           </td>
           <td>
-            <div>${o.layanan}</div>
-            <small style="color: var(--text-muted);">${o.jumlah}</small>
+            <div style="font-weight:600; font-size:0.88rem; color:var(--dark);">${o.layanan}</div>
+            <span class="badge ${o.layanan.toLowerCase().includes('kilo') ? 'badge-primary' : 'badge-warning'}" style="font-size:0.7rem; margin-top:2px;">
+              ${o.jumlah}
+            </span>
           </td>
-          <td style="font-weight: 700; color: var(--primary);">${formatRupiah(o.total_biaya)}</td>
           <td>
-            <button class="badge ${isLunas ? 'badge-success' : 'badge-danger'}" 
-                    style="cursor: pointer; border: none;"
+            <strong style="font-size:0.98rem; color:var(--primary);">${formatRupiah(o.total_biaya)}</strong>
+          </td>
+          <td>
+            <button class="${isLunas ? 'badge-lunas' : 'badge-belum-lunas'}" 
+                    style="cursor: pointer;"
                     onclick="handleQuickPaymentToggle('${o.id_pesanan}', '${isLunas ? 'Belum Lunas' : 'Lunas'}')"
                     title="Klik untuk ubah status pembayaran">
-              ${o.status_bayar || 'Belum Lunas'} 🔄
+              ${isLunas ? '✓ Lunas' : 'Belum Lunas'} 🔄
             </button>
           </td>
           <td>
-            <span class="badge badge-primary">${o.status_cucian}</span>
+            <span class="badge ${o.status_cucian === 'Selesai' ? 'badge-success' : o.status_cucian === 'Siap Diambil' ? 'badge-primary' : 'badge-warning'}" style="font-size:0.75rem;">
+              ${o.status_cucian}
+            </span>
           </td>
           <td>
-            <button class="btn btn-secondary btn-sm" onclick="openReceiptModalByResi('${o.id_pesanan}')" title="Cetak Struk 58mm">
-              🖨️ Struk
-            </button>
+            <div style="display:flex; gap:5px; align-items:center;">
+              <button class="btn-tbl-struk" onclick="openReceiptModalByResi('${o.id_pesanan}')" title="Cetak Struk Thermal 58mm">
+                🖨️ Struk
+              </button>
+              <button class="btn-tbl-wa" onclick="sendWhatsAppReceipt('${o.id_pesanan}')" title="Kirim Nota via WA">
+                📲 WA
+              </button>
+            </div>
           </td>
         </tr>
       `;
