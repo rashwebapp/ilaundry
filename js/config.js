@@ -8,7 +8,7 @@ const CONFIG = {
   APP_NAME: 'iLaundry Pro by RASH',
   BRAND_NAME: 'iLaundry Pro',
   DEVELOPER_NAME: 'RASH WebApp Builder',
-  PHONE_CONTACT: '6285174273313', // Nomor CS Laundry untuk WhatsApp
+  PHONE_CONTACT: '628982485685', // Nomor CS Laundry untuk WhatsApp
   CURRENCY_SYMBOL: 'Rp ',
   ADMIN_USER: 'admin',           // Username Login Kasir/Admin
   ADMIN_PASS: '1234'             // Password / PIN Login Kasir/Admin
